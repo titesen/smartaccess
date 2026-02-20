@@ -1,0 +1,8 @@
+export enum DeviceStatus {
+    REGISTERED = 'REGISTERED',
+    ONLINE = 'ONLINE',
+    OFFLINE = 'OFFLINE',
+    ERROR = 'ERROR',
+    MAINTENANCE = 'MAINTENANCE',
+    DECOMMISSIONED = 'DECOMMISSIONED',
+}
