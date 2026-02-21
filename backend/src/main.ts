@@ -13,6 +13,7 @@ import { PgEventRepository } from './infrastructure/repositories/event.repositor
 import { PgAuditRepository } from './infrastructure/repositories/audit.repository.js';
 import { PgEventProcessingLogRepository } from './infrastructure/repositories/event-processing-log.repository.js';
 import { PgOutboxRepository } from './infrastructure/outbox/outbox.repository.js';
+import { PgUserRepository } from './infrastructure/repositories/user.repository.js';
 
 // Adapters
 import { RabbitMQAdapter } from './infrastructure/adapters/broker.adapter.js';
@@ -21,21 +22,25 @@ import { RedisCacheAdapter } from './infrastructure/adapters/cache.adapter.js';
 // Application — services
 import { EventProcessingService } from './application/services/event-processing.service.js';
 import { DeviceService } from './application/services/device.service.js';
-import { RetryService } from './application/services/retry.service.js';
-import { DlqService } from './application/services/dlq.service.js';
+import { AuthService } from './application/services/auth.service.js';
 import { EventConsumer } from './application/consumers/event.consumer.js';
 
 // Infrastructure — resilience
-import { ExponentialBackoffStrategy } from './infrastructure/retry/retry.strategy.js';
 import { OutboxProcessor } from './infrastructure/outbox/outbox.processor.js';
 
 // Routes
 import { createDeviceRoutes } from './application/routes/device.routes.js';
 import { createEventRoutes } from './application/routes/event.routes.js';
+import { createAuthRoutes } from './application/routes/auth.routes.js';
 
 // Middleware
 import { errorHandler } from './application/middleware/error-handler.js';
 import { requestLogger } from './application/middleware/request-logger.js';
+import { createAuthMiddleware } from './application/middleware/auth.middleware.js';
+import { requireRole } from './application/middleware/rbac.middleware.js';
+
+// Domain
+import { UserRole } from './domain/auth/auth.types.js';
 
 // WebSocket
 import { WebSocketGateway } from './infrastructure/websocket/ws-gateway.js';
@@ -52,9 +57,9 @@ const eventRepo = new PgEventRepository();
 const auditRepo = new PgAuditRepository();
 const processingLogRepo = new PgEventProcessingLogRepository();
 const outboxRepo = new PgOutboxRepository();
+const userRepo = new PgUserRepository();
 const brokerAdapter = new RabbitMQAdapter();
 const cacheAdapter = new RedisCacheAdapter();
-const retryStrategy = new ExponentialBackoffStrategy();
 
 const eventProcessingService = new EventProcessingService(
     deviceRepo,
@@ -65,11 +70,13 @@ const eventProcessingService = new EventProcessingService(
 );
 
 const deviceService = new DeviceService(deviceRepo, cacheAdapter);
-const retryService = new RetryService(eventRepo, retryStrategy);
-const dlqService = new DlqService(eventRepo, auditRepo);
+const authService = new AuthService(userRepo, auditRepo);
 const eventConsumer = new EventConsumer(brokerAdapter, eventProcessingService);
 const outboxProcessor = new OutboxProcessor(outboxRepo, brokerAdapter);
 const wsGateway = new WebSocketGateway(server, logger);
+
+// Middleware instances
+const authMiddleware = createAuthMiddleware(authService);
 
 // ---------------------------------------------------------------------------
 // Middleware
@@ -80,7 +87,7 @@ app.use(express.json());
 app.use(requestLogger);
 
 // ---------------------------------------------------------------------------
-// Routes
+// Public Routes
 // ---------------------------------------------------------------------------
 
 app.get('/health', async (_req, res) => {
@@ -100,8 +107,14 @@ app.get('/health', async (_req, res) => {
     });
 });
 
-app.use('/api/devices', createDeviceRoutes(deviceService));
-app.use('/api/events', createEventRoutes(eventRepo));
+app.use('/api/auth', createAuthRoutes(authService));
+
+// ---------------------------------------------------------------------------
+// Protected Routes (require JWT)
+// ---------------------------------------------------------------------------
+
+app.use('/api/devices', authMiddleware, createDeviceRoutes(deviceService));
+app.use('/api/events', authMiddleware, requireRole(UserRole.ADMIN, UserRole.OPERATOR), createEventRoutes(eventRepo));
 
 // Error handler (must be last)
 app.use(errorHandler);
