@@ -1,17 +1,16 @@
-import amqplib from 'amqplib';
 import winston from 'winston';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { config } from './config.js';
+import { SimulationEngine } from './simulation/simulation-engine.js';
 
 // ---------------------------------------------------------------------------
 // Logger
 // ---------------------------------------------------------------------------
 
 const logger = winston.createLogger({
-    level: process.env.LOG_LEVEL || 'info',
+    level: config.logLevel,
     format: winston.format.combine(
-        winston.format.timestamp(),
+        winston.format.timestamp({ format: 'YYYY-MM-DDTHH:mm:ss.SSSZ' }),
+        winston.format.errors({ stack: true }),
         winston.format.json(),
     ),
     defaultMeta: { service: 'smartaccess-simulator' },
@@ -26,41 +25,19 @@ const logger = winston.createLogger({
 });
 
 // ---------------------------------------------------------------------------
-// Configuration
-// ---------------------------------------------------------------------------
-
-const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://smartaccess:smartaccess@localhost:5672';
-const EXCHANGE_NAME = 'smartaccess.events';
-const EXCHANGE_TYPE = 'topic';
-
-// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
+const engine = new SimulationEngine(logger);
+
 async function start(): Promise<void> {
-    logger.info('Starting SmartAccess Device Simulator...');
+    logger.info('Starting SmartAccess Device Simulator...', {
+        deviceCount: config.simulation.deviceCount,
+        telemetryIntervalMs: config.simulation.telemetryIntervalMs,
+    });
 
     try {
-        const connection = await amqplib.connect(RABBITMQ_URL);
-        logger.info('Connected to RabbitMQ');
-
-        const channel = await connection.createChannel();
-        await channel.assertExchange(EXCHANGE_NAME, EXCHANGE_TYPE, { durable: true });
-        logger.info(`Exchange "${EXCHANGE_NAME}" (${EXCHANGE_TYPE}) asserted`);
-
-        // TODO: Implement device simulation and event generation
-        logger.info('Simulator is ready. Event generation not yet implemented.');
-
-        connection.on('error', (err: Error) => {
-            logger.error('RabbitMQ connection error', { error: err.message });
-        });
-
-        connection.on('close', () => {
-            logger.warn('RabbitMQ connection closed');
-        });
-
-        // Keep the process alive
-        await new Promise(() => { });
+        await engine.start();
     } catch (err) {
         logger.error('Simulator failed to start', {
             error: err instanceof Error ? err.message : String(err),
@@ -73,14 +50,13 @@ async function start(): Promise<void> {
 // Graceful Shutdown
 // ---------------------------------------------------------------------------
 
-process.on('SIGTERM', () => {
-    logger.info('Received SIGTERM. Shutting down...');
+async function shutdown(signal: string): Promise<void> {
+    logger.info(`Received ${signal}. Shutting down gracefully...`);
+    await engine.stop();
     process.exit(0);
-});
+}
 
-process.on('SIGINT', () => {
-    logger.info('Received SIGINT. Shutting down...');
-    process.exit(0);
-});
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 start();
