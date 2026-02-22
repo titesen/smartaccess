@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import type { DeviceService } from '../services/device.service.js';
 import type { DeviceStatus } from '../../domain/devices/device.types.js';
+import { validateInput, schemas } from '../middleware/validate-input.js';
 
 export function createDeviceRoutes(deviceService: DeviceService): Router {
     const router = Router();
@@ -36,12 +37,8 @@ export function createDeviceRoutes(deviceService: DeviceService): Router {
     });
 
     // PATCH /api/devices/:uuid/status — Update device status
-    router.patch('/:uuid/status', async (req: Request, res: Response) => {
-        const { status } = req.body as { status?: DeviceStatus };
-        if (!status) {
-            res.status(400).json({ error: 'Missing "status" in request body' });
-            return;
-        }
+    router.patch('/:uuid/status', validateInput(schemas.updateDeviceStatus), async (req: Request, res: Response) => {
+        const { status } = req.body as { status: DeviceStatus };
 
         try {
             const device = await deviceService.updateStatus(req.params.uuid, status);

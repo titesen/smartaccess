@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { fetchDevices, updateDeviceStatus, type Device } from '../../../lib/api';
 
 const STATUS_BADGE: Record<string, string> = {
@@ -13,6 +14,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function DevicesPage() {
+    const router = useRouter();
     const [devices, setDevices] = useState<Device[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -83,7 +85,9 @@ export default function DevicesPage() {
                         ) : (
                             devices.map((device) => (
                                 <tr key={device.deviceUuid}>
-                                    <td style={{ fontWeight: 600 }}>{device.name}</td>
+                                    <td style={{ fontWeight: 600, cursor: 'pointer', color: 'var(--color-primary)' }}
+                                        onClick={() => router.push(`/dashboard/devices/${device.deviceUuid}`)}
+                                    >{device.name}</td>
                                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-secondary)' }}>
                                         {device.deviceUuid.slice(0, 8)}…
                                     </td>

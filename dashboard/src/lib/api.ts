@@ -121,6 +121,55 @@ export async function fetchEvents(limit = 50, offset = 0): Promise<DomainEvent[]
     return res.data;
 }
 
+export async function fetchEvent(eventUuid: string): Promise<DomainEvent> {
+    const res = await request<{ data: DomainEvent }>(`/api/events/${eventUuid}`);
+    return res.data;
+}
+
+export async function fetchEventsByDevice(deviceId: number, limit = 50): Promise<DomainEvent[]> {
+    const res = await request<{ data: DomainEvent[] }>(`/api/events?deviceId=${deviceId}&limit=${limit}`);
+    return res.data;
+}
+
+export async function retryEvent(eventUuid: string): Promise<void> {
+    await request(`/api/events/${eventUuid}/retry`, { method: 'POST' });
+}
+
+// ---------------------------------------------------------------------------
+// Dead Letter Queue
+// ---------------------------------------------------------------------------
+
+export interface DeadLetterEvent {
+    id: number;
+    originalEventId: number;
+    payload: Record<string, unknown>;
+    failureReason: string;
+    movedAt: string;
+}
+
+export async function fetchDeadLetterEvents(limit = 50): Promise<DeadLetterEvent[]> {
+    const res = await request<{ data: DeadLetterEvent[] }>(`/api/events/dlq?limit=${limit}`);
+    return res.data;
+}
+
+// ---------------------------------------------------------------------------
+// Device Status History
+// ---------------------------------------------------------------------------
+
+export interface StatusHistoryEntry {
+    id: number;
+    deviceId: number;
+    previousStatus: string;
+    newStatus: string;
+    changedAt: string;
+    changedBy: string;
+}
+
+export async function fetchDeviceStatusHistory(deviceId: number): Promise<StatusHistoryEntry[]> {
+    const res = await request<{ data: StatusHistoryEntry[] }>(`/api/devices/${deviceId}/history`);
+    return res.data;
+}
+
 // ---------------------------------------------------------------------------
 // Health
 // ---------------------------------------------------------------------------

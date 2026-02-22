@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { isAuthenticated, getStoredUser, logout } from '../../lib/api';
+import SkipLink from '../../components/accessibility/SkipLink';
 
 const NAV_ITEMS = [
     { href: '/dashboard', icon: '📊', label: 'Overview' },
     { href: '/dashboard/devices', icon: '📡', label: 'Devices' },
     { href: '/dashboard/events', icon: '⚡', label: 'Events' },
+    { href: '/dashboard/events/dlq', icon: '☠️', label: 'Dead Letter' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -28,8 +30,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return (
         <div className="app-layout">
+            <SkipLink />
             {/* Sidebar */}
-            <aside className="app-sidebar">
+            <aside className="app-sidebar" role="navigation" aria-label="Main navigation">
                 <div className="app-sidebar__logo">
                     <div className="app-sidebar__logo-icon">🔐</div>
                     <span className="app-sidebar__logo-text">SmartAccess</span>
@@ -42,8 +45,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             href={item.href}
                             className={`app-sidebar__link ${pathname === item.href ? 'app-sidebar__link--active' : ''
                                 }`}
+                            aria-current={pathname === item.href ? 'page' : undefined}
                         >
-                            <span className="app-sidebar__link-icon">{item.icon}</span>
+                            <span className="app-sidebar__link-icon" aria-hidden="true">{item.icon}</span>
                             {item.label}
                         </Link>
                     ))}
@@ -63,7 +67,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </aside>
 
             {/* Main Content */}
-            <main className="app-main">{children}</main>
+            <main id="main-content" className="app-main" role="main">{children}</main>
         </div>
     );
 }
+

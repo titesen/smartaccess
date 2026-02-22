@@ -1,8 +1,5 @@
 {
-    "env": {
-        "node": true,
-        "es2022": true
-    },
+    "root": true,
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
         "ecmaVersion": 2022,
@@ -27,6 +24,10 @@
             }
         ],
         "no-unused-vars": "off"
+    },
+    "env": {
+        "node": true,
+        "es2022": true
     },
     "ignorePatterns": [
         "dist/",

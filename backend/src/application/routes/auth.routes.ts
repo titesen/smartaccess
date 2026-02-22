@@ -1,17 +1,14 @@
 import { Router, type Request, type Response } from 'express';
 import type { AuthService } from '../services/auth.service.js';
 import { UserRole } from '../../domain/auth/auth.types.js';
+import { validateInput, schemas } from '../middleware/validate-input.js';
 
 export function createAuthRoutes(authService: AuthService): Router {
     const router = Router();
 
     // POST /api/auth/login
-    router.post('/login', async (req: Request, res: Response) => {
-        const { email, password } = req.body as { email?: string; password?: string };
-        if (!email || !password) {
-            res.status(400).json({ error: 'Missing email or password' });
-            return;
-        }
+    router.post('/login', validateInput(schemas.login), async (req: Request, res: Response) => {
+        const { email, password } = req.body as { email: string; password: string };
 
         try {
             const result = await authService.login(email, password, req.ip);
@@ -29,22 +26,14 @@ export function createAuthRoutes(authService: AuthService): Router {
     });
 
     // POST /api/auth/register (for dev/seeding only)
-    router.post('/register', async (req: Request, res: Response) => {
+    router.post('/register', validateInput(schemas.register), async (req: Request, res: Response) => {
         const { email, password, role } = req.body as {
-            email?: string;
-            password?: string;
+            email: string;
+            password: string;
             role?: string;
         };
-        if (!email || !password) {
-            res.status(400).json({ error: 'Missing email or password' });
-            return;
-        }
 
         const userRole = (role as UserRole) || UserRole.VIEWER;
-        if (!Object.values(UserRole).includes(userRole)) {
-            res.status(400).json({ error: `Invalid role. Must be one of: ${Object.values(UserRole).join(', ')}` });
-            return;
-        }
 
         try {
             const user = await authService.register(email, password, userRole);
