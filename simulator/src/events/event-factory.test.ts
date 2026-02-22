@@ -1,18 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { DeviceStatus } from '../devices/device-pool.js';
+import type { SimulatedDevice } from '../devices/device-pool.js';
 import {
     createDeviceConnected,
     createDeviceDisconnected,
     createTelemetryReported,
     createAlertTriggered,
-} from '../events/event-factory.js';
+} from './event-factory.js';
 
 describe('EventFactory', () => {
-    const device = {
+    const device: SimulatedDevice = {
         deviceUuid: '550e8400-e29b-41d4-a716-446655440000',
-        name: 'SIM-001',
-        status: DeviceStatus.ONLINE,
-        firmware: '1.0.0',
+        name: 'sensor-001',
+        location: 'Building A – Floor 1',
+        status: 'ONLINE',
+        firmwareVersion: '1.0.0',
     };
 
     describe('createDeviceConnected', () => {
@@ -38,33 +39,39 @@ describe('EventFactory', () => {
         it('should create a TELEMETRY_REPORTED event with metrics', () => {
             const event = createTelemetryReported(device);
             expect(event.eventType).toBe('TELEMETRY_REPORTED');
-            expect(event.payload).toHaveProperty('temperature');
-            expect(event.payload).toHaveProperty('humidity');
-            expect(event.payload).toHaveProperty('battery');
+            expect(event.payload).toHaveProperty('metrics');
+            const metrics = event.payload.metrics as Record<string, number>;
+            expect(metrics).toHaveProperty('cpu');
+            expect(metrics).toHaveProperty('memory');
+            expect(metrics).toHaveProperty('temperature');
         });
 
         it('should generate realistic metric ranges', () => {
             const event = createTelemetryReported(device);
-            const { temperature, humidity, battery } = event.payload as {
-                temperature: number;
-                humidity: number;
-                battery: number;
-            };
-            expect(temperature).toBeGreaterThanOrEqual(15);
-            expect(temperature).toBeLessThanOrEqual(45);
-            expect(humidity).toBeGreaterThanOrEqual(20);
-            expect(humidity).toBeLessThanOrEqual(90);
-            expect(battery).toBeGreaterThanOrEqual(0);
-            expect(battery).toBeLessThanOrEqual(100);
+            const metrics = event.payload.metrics as Record<string, number>;
+            expect(metrics.cpu).toBeGreaterThanOrEqual(0);
+            expect(metrics.cpu).toBeLessThanOrEqual(100);
+            expect(metrics.memory).toBeGreaterThanOrEqual(0);
+            expect(metrics.memory).toBeLessThanOrEqual(100);
+            expect(metrics.temperature).toBeGreaterThanOrEqual(-40);
+            expect(metrics.temperature).toBeLessThanOrEqual(125);
         });
     });
 
     describe('createAlertTriggered', () => {
         it('should create an ALERT_TRIGGERED event', () => {
-            const event = createAlertTriggered(device);
+            const event = createAlertTriggered(device, 'cpu', 92, 85);
             expect(event.eventType).toBe('ALERT_TRIGGERED');
-            expect(event.payload).toHaveProperty('alertType');
             expect(event.payload).toHaveProperty('severity');
+            expect(event.payload).toHaveProperty('metric');
+            expect(event.payload.metric).toBe('cpu');
+            expect(event.payload.value).toBe(92);
+            expect(event.payload.threshold).toBe(85);
+        });
+
+        it('should assign CRITICAL severity for extreme values', () => {
+            const event = createAlertTriggered(device, 'cpu', 98, 85);
+            expect(event.payload.severity).toBe('CRITICAL');
         });
     });
 });

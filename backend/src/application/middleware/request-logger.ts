@@ -11,7 +11,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
     const start = Date.now();
 
     // Attach to request for downstream usage
-    (req as Record<string, unknown>).correlationId = correlationId;
+    (req as unknown as Record<string, unknown>).correlationId = correlationId;
     res.setHeader('x-correlation-id', correlationId);
 
     res.on('finish', () => {

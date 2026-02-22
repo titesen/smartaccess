@@ -2,6 +2,6 @@
 // Domain / Devices — barrel export
 // ---------------------------------------------------------------------------
 
-export { DeviceEntity } from './device.entity';
-export { DeviceStateMachine } from './device-state-machine';
-export type { DeviceStatus, DeviceType, Device } from './device.types';
+export type { Device } from './device.entity.js';
+export { DeviceStatus } from './device.types.js';
+export { validateTransition, isValidTransition, statusFromEventType } from './device-state-machine.js';

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { createClient, RedisClientType } from 'redis';
-import logger from '../../infrastructure/observability/logger';
+import Redis from 'ioredis';
+import { logger } from '../../shared/logger/logger.js';
 
 // ---------------------------------------------------------------------------
 // Redis-based Rate Limiter — Sliding Window
@@ -18,17 +18,19 @@ const DEFAULT_CONFIG: RateLimitConfig = {
     keyPrefix: 'rl',
 };
 
-let redisClient: RedisClientType | null = null;
+let redisClient: Redis | null = null;
 
-async function getRedisClient(): Promise<RedisClientType | null> {
+async function getRedisClient(): Promise<Redis | null> {
     if (redisClient) return redisClient;
 
     try {
-        const client = createClient({
-            url: process.env.REDIS_URL || 'redis://localhost:6379',
-        }) as RedisClientType;
+        const client = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+            lazyConnect: true,
+            maxRetriesPerRequest: 1,
+            retryStrategy: () => null,  // Don't retry — graceful degradation
+        });
 
-        client.on('error', (err) => {
+        client.on('error', (err: Error) => {
             logger.warn('Rate limiter Redis error — falling back to no-limit', { error: err.message });
         });
 

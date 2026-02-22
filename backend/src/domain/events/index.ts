@@ -2,8 +2,10 @@
 // Domain / Events — barrel export
 // ---------------------------------------------------------------------------
 
-export { EventEntity } from './event.entity';
-export { EventFactory } from './event.factory';
-export { EventObserver } from './event.observer';
-export { EventPayloadBuilder } from './event-payload.builder';
-export type { EventType, ProcessingStatus, DomainEvent } from './event.types';
+export type { DomainEvent } from './event.entity.js';
+export type { IncomingEvent } from './event.factory.js';
+export { parseIncomingEvent } from './event.factory.js';
+export { EventObserver, DomainEvents } from './event.observer.js';
+export type { DomainEventType } from './event.observer.js';
+export { EventPayloadBuilder } from './event-payload.builder.js';
+export { EventType, EventProcessingStatus, AckStatus } from './event.types.js';

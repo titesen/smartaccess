@@ -1,11 +1,9 @@
-import type pg from 'pg';
 import { getPool } from '../../infrastructure/database/connection.js';
 import type { IDeviceRepository } from '../../infrastructure/repositories/device.repository.js';
 import type { ICacheAdapter } from '../../infrastructure/adapters/cache.adapter.js';
 import type { Device } from '../../domain/devices/device.entity.js';
 import type { DeviceStatus } from '../../domain/devices/device.types.js';
 import { validateTransition } from '../../domain/devices/device-state-machine.js';
-import { logger } from '../../shared/logger/logger.js';
 
 // ---------------------------------------------------------------------------
 // DeviceService — read operations for the API layer
