@@ -10,7 +10,13 @@ const NAV_ITEMS = [
     { href: '/dashboard', icon: '📊', label: 'Overview' },
     { href: '/dashboard/devices', icon: '📡', label: 'Devices' },
     { href: '/dashboard/events', icon: '⚡', label: 'Events' },
+    { href: '/dashboard/events/live', icon: '📺', label: 'Live Stream' },
     { href: '/dashboard/events/dlq', icon: '☠️', label: 'Dead Letter' },
+    { href: '/dashboard/monitoring', icon: '🚨', label: 'Alerts', group: 'Monitoring' },
+    { href: '/dashboard/monitoring/metrics', icon: '📈', label: 'Metrics' },
+    { href: '/dashboard/monitoring/health', icon: '💚', label: 'Health' },
+    { href: '/dashboard/admin/users', icon: '👥', label: 'Users', group: 'Admin' },
+    { href: '/dashboard/admin/settings', icon: '⚙️', label: 'Settings' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

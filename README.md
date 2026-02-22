@@ -11,9 +11,29 @@ Sistema de monitoreo de dispositivos IoT en tiempo real basado en Event-Driven A
 | Base de Datos | PostgreSQL 14+ |
 | Cache | Redis |
 | Frontend | Next.js (PWA) |
+| Device Simulator | Node.js + TypeScript |
 | Tiempo Real | WebSockets |
 | Proxy Reverso | Nginx |
+| Observabilidad | Prometheus + Grafana + Jaeger |
 | Contenedores | Docker + Docker Compose |
+| CI/CD | GitHub Actions |
+
+## Arquitectura
+
+```
+┌──────────┐     AMQP      ┌──────────┐    PostgreSQL    ┌──────────┐
+│Simulator │ ──────────────▶│ Backend  │ ◀──────────────▶ │PostgreSQL│
+└──────────┘                │(Consumer)│                  └──────────┘
+                            │(API+WS)  │──────▶ Redis (cache)
+                            └────┬─────┘
+                       WebSocket │  REST
+                            ┌────▼─────┐
+                            │Dashboard │
+                            │(Next.js) │
+                            └──────────┘
+```
+
+**Patrones clave:** ACK Manual, Retry + DLQ, Idempotencia, Outbox Pattern, Unit of Work, State Machine, Observer, Factory, Repository.
 
 ## Quick Start
 
@@ -33,11 +53,26 @@ curl http://localhost/api/health
 
 | Servicio | Puerto | Descripción |
 |----------|--------|------------|
-| Nginx | 80 | Proxy reverso |
-| Backend API | 3000 (interno) | API REST + WebSocket |
-| RabbitMQ Management | 15672 | UI de administración del broker |
-| PostgreSQL | 5432 (interno) | Base de datos |
-| Redis | 6379 (interno) | Cache |
+| Nginx | 80 | Proxy reverso (API + Dashboard + WS) |
+| Backend API | 3000 (interno) | API REST + WebSocket + Consumer AMQP |
+| Dashboard | interno | Next.js PWA (accesible vía Nginx) |
+| Simulator | — | Generador de eventos IoT simulados |
+| PostgreSQL | 5432 (interno) | Base de datos (10 tablas) |
+| RabbitMQ | 15672 | Broker de mensajes (Management UI) |
+| Redis | 6379 (interno) | Cache + Rate Limiting |
+| Prometheus | 9090 | Recolector de métricas |
+| Grafana | 3001 | Dashboards de observabilidad |
+| Jaeger | 16686 | Distributed Tracing UI |
+
+## Testing
+
+```bash
+# Backend
+cd backend && npm test
+
+# Simulator
+cd simulator && npm test
+```
 
 ## Documentación
 

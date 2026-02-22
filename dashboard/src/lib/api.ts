@@ -183,4 +183,102 @@ export async function fetchHealth() {
     }>('/health');
 }
 
+// ---------------------------------------------------------------------------
+// Alerts (sourced from audit_log with category = DOMAIN)
+// ---------------------------------------------------------------------------
+
+export interface Alert {
+    id: number;
+    action: string;
+    entityType: string;
+    entityId: string;
+    details: Record<string, unknown>;
+    severity: string;
+    correlationId: string | null;
+    createdAt: string;
+    acknowledged: boolean;
+}
+
+export async function fetchAlerts(limit = 50): Promise<Alert[]> {
+    const res = await request<{ data: Alert[] }>(`/api/alerts?limit=${limit}`);
+    return res.data;
+}
+
+export async function acknowledgeAlert(alertId: number): Promise<void> {
+    await request(`/api/alerts/${alertId}/acknowledge`, { method: 'POST' });
+}
+
+// ---------------------------------------------------------------------------
+// Users (admin)
+// ---------------------------------------------------------------------------
+
+export interface User {
+    id: number;
+    email: string;
+    role: string;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export async function fetchUsers(): Promise<User[]> {
+    const res = await request<{ data: User[] }>('/api/admin/users');
+    return res.data;
+}
+
+export async function createUser(data: { email: string; password: string; role: string }): Promise<User> {
+    const res = await request<{ data: User }>('/api/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+    return res.data;
+}
+
+export async function updateUser(userId: number, data: { role?: string; isActive?: boolean }): Promise<User> {
+    const res = await request<{ data: User }>(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+    });
+    return res.data;
+}
+
+// ---------------------------------------------------------------------------
+// Audit Log
+// ---------------------------------------------------------------------------
+
+export interface AuditEntry {
+    id: number;
+    action: string;
+    entityType: string;
+    entityId: string;
+    category: string;
+    details: Record<string, unknown>;
+    correlationId: string | null;
+    performedBy: string | null;
+    createdAt: string;
+}
+
+export async function fetchAuditLog(limit = 100): Promise<AuditEntry[]> {
+    const res = await request<{ data: AuditEntry[] }>(`/api/audit?limit=${limit}`);
+    return res.data;
+}
+
+// ---------------------------------------------------------------------------
+// Metrics summary (simple proxy to backend stats)
+// ---------------------------------------------------------------------------
+
+export interface MetricsSummary {
+    uptime: number;
+    eventsProcessed: number;
+    eventsFailed: number;
+    devicesOnline: number;
+    devicesTotal: number;
+    dlqSize: number;
+    avgProcessingMs: number;
+}
+
+export async function fetchMetricsSummary(): Promise<MetricsSummary> {
+    return request<MetricsSummary>('/api/metrics/summary');
+}
+
 export { ApiError };
