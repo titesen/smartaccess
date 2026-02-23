@@ -89,11 +89,15 @@ services:
     restart: unless-stopped
 
   dashboard:
-    build: ./dashboard
+    build:
+      context: ./dashboard
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost
+        NEXT_PUBLIC_WS_URL: ws://localhost/ws
     env_file: .env
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:3000
-      - NEXT_PUBLIC_WS_URL=ws://backend:3000
+      - NEXT_PUBLIC_API_URL=http://localhost
+      - NEXT_PUBLIC_WS_URL=ws://localhost/ws
     depends_on:
       - backend
     networks:
