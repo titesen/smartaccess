@@ -10,6 +10,7 @@ import type { IncomingEvent } from '../../domain/events/event.factory.js';
 import { statusFromEventType, isValidTransition } from '../../domain/devices/device-state-machine.js';
 import { EventProcessingStatus } from '../../domain/events/event.types.js';
 import type { Device } from '../../domain/devices/device.entity.js';
+import type { WebSocketGateway } from '../../infrastructure/websocket/ws-gateway.js';
 
 // ---------------------------------------------------------------------------
 // EventProcessingService
@@ -22,6 +23,7 @@ export class EventProcessingService {
         private readonly auditRepo: IAuditRepository,
         private readonly processingLogRepo: IEventProcessingLogRepository,
         private readonly cacheAdapter: ICacheAdapter,
+        private readonly wsGateway: WebSocketGateway,
     ) { }
 
     /**
@@ -138,6 +140,15 @@ export class EventProcessingService {
                     JSON.stringify(device),
                     300, // 5min TTL
                 );
+
+                // 9. Broadcast event via WebSocket
+                this.wsGateway.broadcast(event.eventType, {
+                    eventUuid: event.eventUuid,
+                    deviceId: device.deviceUuid,
+                    eventType: event.eventType,
+                    payload: event.payload,
+                    timestamp: new Date().toISOString(),
+                });
 
                 return true;
             });

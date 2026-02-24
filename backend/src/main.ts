@@ -60,6 +60,7 @@ const outboxRepo = new PgOutboxRepository();
 const userRepo = new PgUserRepository();
 const brokerAdapter = new RabbitMQAdapter();
 const cacheAdapter = new RedisCacheAdapter();
+const wsGateway = new WebSocketGateway(server, logger);
 
 const eventProcessingService = new EventProcessingService(
     deviceRepo,
@@ -67,13 +68,13 @@ const eventProcessingService = new EventProcessingService(
     auditRepo,
     processingLogRepo,
     cacheAdapter,
+    wsGateway,
 );
 
 const deviceService = new DeviceService(deviceRepo, cacheAdapter);
 const authService = new AuthService(userRepo, auditRepo);
 const eventConsumer = new EventConsumer(brokerAdapter, eventProcessingService);
 const outboxProcessor = new OutboxProcessor(outboxRepo, brokerAdapter);
-const wsGateway = new WebSocketGateway(server, logger);
 
 // Middleware instances
 const authMiddleware = createAuthMiddleware(authService);

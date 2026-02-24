@@ -27,6 +27,9 @@ async function request<T>(
     });
 
     if (!res.ok) {
+        if (res.status === 401) {
+            logout();
+        }
         const body = await res.json().catch(() => ({ error: res.statusText }));
         throw new ApiError(res.status, body.error?.message || body.error || res.statusText);
     }
@@ -180,7 +183,7 @@ export async function fetchHealth() {
         status: string;
         timestamp: string;
         checks: { database: string; rabbitmq: string; redis: string };
-    }>('/health');
+    }>('/api/health');
 }
 
 // ---------------------------------------------------------------------------
