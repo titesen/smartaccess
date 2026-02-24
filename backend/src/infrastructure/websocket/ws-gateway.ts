@@ -57,7 +57,9 @@ export class WebSocketGateway {
         }
 
         if (sent > 0) {
-            this.logger.debug(`WebSocket broadcast: ${type} → ${sent} clients`);
+            this.logger.info(`WebSocket broadcast: ${type} → ${sent} clients`);
+        } else {
+            this.logger.info(`WebSocket broadcast: ${type} → dropped (no active clients)`);
         }
     }
 
