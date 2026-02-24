@@ -57,7 +57,9 @@ export class DevicePool {
     /** Seed the pool with `count` devices in REGISTERED status. */
     init(count: number): void {
         this.devices = Array.from({ length: count }, (_, i) => ({
-            deviceUuid: crypto.randomUUID(),
+            // Generate a deterministic UUID based on the sequence index so devices
+            // persist logically across simulator restarts instead of creating "ghosts"
+            deviceUuid: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
             name: `sensor-${String(i + 1).padStart(3, '0')}`,
             location: pick(LOCATIONS),
             status: 'REGISTERED' as DeviceStatus,
