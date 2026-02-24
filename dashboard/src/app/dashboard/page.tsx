@@ -42,8 +42,16 @@ export default function DashboardOverview() {
             );
         }
 
-        // If it's a connection/disconnection event, optimistically refresh device counts
-        if (['DEVICE_CONNECTED', 'DEVICE_DISCONNECTED', 'MAINTENANCE'].includes(latest.type)) {
+        // If it's a device-related event, optimistically refresh device counts and states
+        if ([
+            'DEVICE_CONNECTED',
+            'DEVICE_DISCONNECTED',
+            'MAINTENANCE',
+            'TELEMETRY_REPORTED',
+            'ALERT_TRIGGERED',
+            'FIRMWARE_UPDATED',
+            'ERROR_RECORDED'
+        ].includes(latest.type)) {
             fetchDevices().then(setDevices).catch(() => { });
         }
     }, [messages]);

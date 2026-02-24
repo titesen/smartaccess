@@ -35,6 +35,9 @@ services:
     env_file: .env
     environment:
       - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672
+      - SIM_CONNECTION_TOGGLE_PROB=0.25
+      - SIM_ALERT_PROB=0.15
+      - SIM_TELEMETRY_INTERVAL_MS=3000
     depends_on:
       rabbitmq:
         condition: service_healthy

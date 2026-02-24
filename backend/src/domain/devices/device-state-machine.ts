@@ -6,7 +6,13 @@ import { InvalidStateTransitionError } from '../../shared/errors/domain.error.js
 // ---------------------------------------------------------------------------
 
 const VALID_TRANSITIONS: Record<DeviceStatus, DeviceStatus[]> = {
-    [DeviceStatus.REGISTERED]: [DeviceStatus.ONLINE, DeviceStatus.DECOMMISSIONED],
+    [DeviceStatus.REGISTERED]: [
+        DeviceStatus.ONLINE,
+        DeviceStatus.OFFLINE,
+        DeviceStatus.ERROR,
+        DeviceStatus.MAINTENANCE,
+        DeviceStatus.DECOMMISSIONED
+    ],
     [DeviceStatus.ONLINE]: [
         DeviceStatus.OFFLINE,
         DeviceStatus.ERROR,
@@ -71,7 +77,13 @@ export function statusFromEventType(eventType: string): DeviceStatus | null {
             return DeviceStatus.ONLINE;
         case 'DEVICE_DISCONNECTED':
             return DeviceStatus.OFFLINE;
+        case 'ALERT_TRIGGERED':
+        case 'ERROR_RECORDED':
+            return DeviceStatus.ERROR;
+        case 'MAINTENANCE_SCHEDULED':
+        case 'MAINTENANCE_STARTED':
+            return DeviceStatus.MAINTENANCE;
         default:
-            return null; // no status change expected for telemetry, alerts, commands
+            return null; // no status change expected for telemetry, custom commands, etc.
     }
 }
