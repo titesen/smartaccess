@@ -140,9 +140,9 @@ export default function LiveStreamPage() {
                                         <span title={ev.eventType}>{TYPE_ICON[ev.eventType] || '📋'}</span>
                                     </td>
                                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                                        {ev.eventUuid?.slice(0, 8)}…
+                                        {((ev.payload?.eventUuid as string) || '-').slice(0, 8)}
                                     </td>
-                                    <td style={{ fontSize: 13 }}>{ev.deviceId}</td>
+                                    <td style={{ fontSize: 13 }}>{(ev.payload?.deviceId as string) || '-'}</td>
                                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-secondary)' }}>
                                         {new Date(ev.timestamp).toLocaleTimeString()}
                                     </td>
