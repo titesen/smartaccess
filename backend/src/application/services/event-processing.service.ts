@@ -11,6 +11,7 @@ import { statusFromEventType, isValidTransition } from '../../domain/devices/dev
 import { EventProcessingStatus } from '../../domain/events/event.types.js';
 import type { Device } from '../../domain/devices/device.entity.js';
 import type { WebSocketGateway } from '../../infrastructure/websocket/ws-gateway.js';
+import type { DlqService } from './dlq.service.js';
 
 // ---------------------------------------------------------------------------
 // EventProcessingService
@@ -24,6 +25,7 @@ export class EventProcessingService {
         private readonly processingLogRepo: IEventProcessingLogRepository,
         private readonly cacheAdapter: ICacheAdapter,
         private readonly wsGateway: WebSocketGateway,
+        private readonly dlqService: DlqService,
     ) { }
 
     /**
@@ -80,6 +82,16 @@ export class EventProcessingService {
                     'SUCCESS',
                     'Event persisted',
                 );
+
+                // --- NEW DLQ DEMO LOGIC ---
+                // If the simulator explicitly flags this event as a simulated failure
+                if ((event.payload as Record<string, unknown>).simulate_dlq === true) {
+                    logger.error('Simulating unrecoverable processing failure for DLQ', {
+                        eventUuid: event.eventUuid
+                    });
+                    await this.dlqService.moveToDeadLetter(client, persistedEvent.id, 'simulated_failure_to_trigger_dlq');
+                    return true; // We return true so the DB transaction commits saving the DLQ entry
+                }
 
                 // 4. Update device status if applicable
                 const newStatus = statusFromEventType(event.eventType);

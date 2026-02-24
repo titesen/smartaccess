@@ -7,6 +7,7 @@ import {
     createDeviceDisconnected,
     createTelemetryReported,
     createAlertTriggered,
+    createMalformedEvent,
 } from '../events/event-factory.js';
 
 // ---------------------------------------------------------------------------
@@ -159,6 +160,13 @@ export class SimulationEngine {
                         this.logger.warn(`Alert triggered: ${device.name} — ${metric}=${value} (threshold=${threshold})`);
                     }
                 }
+            }
+
+            // Small chance to emit a malformed event to trigger the DLQ
+            if (device.status === 'ONLINE' && Math.random() < 0.02) {
+                const malformed = createMalformedEvent(device);
+                await this.publisher.publish(malformed);
+                this.logger.error(`Simulated broken event sent: ${device.name}`);
             }
         }
     }

@@ -21,6 +21,7 @@ import { RedisCacheAdapter } from './infrastructure/adapters/cache.adapter.js';
 
 // Application — services
 import { EventProcessingService } from './application/services/event-processing.service.js';
+import { DlqService } from './application/services/dlq.service.js';
 import { DeviceService } from './application/services/device.service.js';
 import { AuthService } from './application/services/auth.service.js';
 import { EventConsumer } from './application/consumers/event.consumer.js';
@@ -62,6 +63,8 @@ const brokerAdapter = new RabbitMQAdapter();
 const cacheAdapter = new RedisCacheAdapter();
 const wsGateway = new WebSocketGateway(server, logger);
 
+const dlqService = new DlqService(eventRepo, auditRepo);
+
 const eventProcessingService = new EventProcessingService(
     deviceRepo,
     eventRepo,
@@ -69,6 +72,7 @@ const eventProcessingService = new EventProcessingService(
     processingLogRepo,
     cacheAdapter,
     wsGateway,
+    dlqService,
 );
 
 const deviceService = new DeviceService(deviceRepo, cacheAdapter);

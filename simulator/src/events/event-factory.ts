@@ -145,3 +145,22 @@ export function createCommandExecuted(
         timestamp: new Date().toISOString(),
     };
 }
+
+export function createMalformedEvent(device: SimulatedDevice): SimulatorEvent {
+    // Generate a valid event shape so it passes initial DB parsing,
+    // but signal the processing service to fail it explicitly for the DLQ.
+    return {
+        eventUuid: crypto.randomUUID(),
+        idempotencyKey: crypto.randomUUID(),
+        deviceUuid: device.deviceUuid,
+        eventType: 'TELEMETRY_REPORTED',
+        payload: {
+            device_id: device.deviceUuid,
+            metrics: { cpu: 999 },
+            simulate_dlq: true,
+            broken_data: true,
+            reason: 'simulated_failure_to_trigger_dlq'
+        },
+        timestamp: new Date().toISOString(),
+    };
+}

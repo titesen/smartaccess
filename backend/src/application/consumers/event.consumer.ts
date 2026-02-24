@@ -80,8 +80,12 @@ export class EventConsumer {
                 error: errorMessage,
             });
 
-            // BR-ACK-002 — don't ACK on failure, requeue for retry
-            this.broker.nack(msg, true);
+            // BR-ACK-002 — If it's a validation error, drop it. Otherwise requeue.
+            if (errorMessage.startsWith('Invalid event:')) {
+                this.broker.nack(msg, false); // Drop permanently
+            } else {
+                this.broker.nack(msg, true);  // Requeue for retry
+            }
         }
     }
 }
