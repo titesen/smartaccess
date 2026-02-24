@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { fetchDevices, fetchHealth, type Device } from '../../lib/api';
 import { useWebSocket } from '../../hooks/use-websocket';
+import { toast } from 'react-hot-toast';
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3000/ws';
 
@@ -26,6 +27,26 @@ export default function DashboardOverview() {
         }
         load();
     }, []);
+
+    // Listen for WebSocket events to trigger real-time updates and notifications
+    useEffect(() => {
+        if (messages.length === 0) return;
+
+        const latest = messages[0];
+        // Only react to the most recent message if it's new
+        // We'll use a simple heuristic: if it's an alert, show toast
+        if (latest.type === 'ALERT_TRIGGERED') {
+            toast.error(
+                `Critical Alert: Device ${latest.payload?.deviceId || 'Unknown'} reported an issue!`,
+                { id: `alert-${latest.timestamp}` } // Prevent duplicate toasts for same event
+            );
+        }
+
+        // If it's a connection/disconnection event, optimistically refresh device counts
+        if (['DEVICE_CONNECTED', 'DEVICE_DISCONNECTED', 'MAINTENANCE'].includes(latest.type)) {
+            fetchDevices().then(setDevices).catch(() => { });
+        }
+    }, [messages]);
 
     const online = devices.filter((d) => d.status === 'ONLINE').length;
     const offline = devices.filter((d) => d.status === 'OFFLINE').length;
