@@ -157,8 +157,8 @@ async function start(): Promise<void> {
     outboxProcessor.start();
 
     // Start HTTP + WebSocket server
-    server.listen(env.port, () => {
-        logger.info(`Backend listening on port ${env.port}`);
+    server.listen(env.port, '0.0.0.0', () => {
+        logger.info(`Backend listening on 0.0.0.0:${env.port}`);
     });
 }
 

@@ -151,7 +151,7 @@ export interface DeadLetterEvent {
 }
 
 export async function fetchDeadLetterEvents(limit = 50): Promise<DeadLetterEvent[]> {
-    const res = await request<{ data: DeadLetterEvent[] }>(`/api/events/dlq?limit=${limit}`);
+    const res = await request<{ data: DeadLetterEvent[] }>(`/api/events/dlq/list?limit=${limit}`);
     return res.data;
 }
 
