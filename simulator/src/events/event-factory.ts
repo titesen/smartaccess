@@ -94,6 +94,9 @@ export function createAlertTriggered(
         temperature: value > 80 ? 'CRITICAL' : value > 60 ? 'HIGH' : 'MEDIUM',
     };
 
+    // Append a suffix to bypass backend deduplication for simulation purposes
+    const uniqueMetric = `${metric}_${Math.floor(Date.now() / 1000).toString().slice(-4)}`;
+
     return {
         eventUuid: crypto.randomUUID(),
         idempotencyKey: crypto.randomUUID(),
@@ -102,7 +105,7 @@ export function createAlertTriggered(
         payload: {
             device_id: device.deviceUuid,
             severity: severityMap[metric] || 'MEDIUM',
-            metric,
+            metric: uniqueMetric,
             threshold,
             value,
         },

@@ -67,6 +67,7 @@ const cacheAdapter = new RedisCacheAdapter();
 const wsGateway = new WebSocketGateway(server, logger);
 
 const dlqService = new DlqService(eventRepo, auditRepo);
+const alertService = new AlertService();
 
 const eventProcessingService = new EventProcessingService(
     deviceRepo,
@@ -76,11 +77,11 @@ const eventProcessingService = new EventProcessingService(
     cacheAdapter,
     wsGateway,
     dlqService,
+    alertService,
 );
 
 const deviceService = new DeviceService(deviceRepo, cacheAdapter);
 const authService = new AuthService(userRepo, auditRepo);
-const alertService = new AlertService();
 const eventConsumer = new EventConsumer(brokerAdapter, eventProcessingService);
 const outboxProcessor = new OutboxProcessor(outboxRepo, brokerAdapter);
 

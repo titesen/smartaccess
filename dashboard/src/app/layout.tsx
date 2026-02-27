@@ -1,12 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
-
-const inter = Inter({
-  variable: '--font-inter',
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-});
 
 export const metadata: Metadata = {
   title: 'SmartAccess — IoT Dashboard',
@@ -36,7 +29,7 @@ export default function RootLayout({
         <link rel="icon" href="/icons/icon-192.png" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className={inter.variable}>
+      <body>
         {children}
         <script
           dangerouslySetInnerHTML={{

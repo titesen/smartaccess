@@ -24,7 +24,7 @@ export default function MetricsPage() {
 
     useEffect(() => {
         load();
-        const interval = setInterval(load, 10000); // poll every 10s
+        const interval = setInterval(load, 3000); // poll every 3s
         return () => clearInterval(interval);
     }, []);
 
@@ -57,12 +57,13 @@ export default function MetricsPage() {
 
             <div className="app-header">
                 <div>
-                    <h1 className="app-header__title">System Metrics</h1>
+                    <h1 className="app-header__title" style={{ fontSize: 44, color: 'var(--accent-blue)', fontStyle: 'italic', textTransform: 'uppercase' }}>System Metrics</h1>
+                    <div style={{ height: '4px', background: 'var(--border-color)', width: '100%', marginBottom: '8px' }}></div>
                     <p className="app-header__subtitle">
-                        {loading ? 'Loading…' : 'Auto-refreshing every 10s'}
+                        {loading ? 'Loading…' : 'Auto-refreshing every 3s'}
                     </p>
                 </div>
-                <button className="btn btn--ghost btn--sm" onClick={load}>↻ Refresh</button>
+                <button className="btn btn--primary" onClick={load}>Reload Data</button>
             </div>
 
             {/* KPI Cards */}
@@ -73,13 +74,13 @@ export default function MetricsPage() {
                 marginBottom: 32,
             }}>
                 {cards.map((card) => (
-                    <div key={card.label} className="monitoring-card">
-                        <div style={{ fontSize: 24, marginBottom: 4 }}>{card.icon}</div>
-                        <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
-                            {card.value}
-                        </div>
-                        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
-                            {card.label}
+                    <div key={card.label} className="monitoring-card" style={{ display: 'flex', flexDirection: 'column', padding: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%', flex: 1 }}>
+                            <div>
+                                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>{card.label}</p>
+                                <p style={{ fontSize: 42, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>{card.value}</p>
+                            </div>
+                            <span style={{ fontSize: 32, paddingBottom: '4px' }}>{card.icon}</span>
                         </div>
                     </div>
                 ))}
@@ -103,8 +104,8 @@ export default function MetricsPage() {
 
             {/* Prometheus endpoint link */}
             <div style={{ marginTop: 24, fontSize: 13, color: 'var(--text-muted)' }}>
-                Raw Prometheus metrics available at{' '}
-                <code style={{ background: 'var(--surface-bg)', padding: '2px 6px', borderRadius: 4 }}>
+                RAW PROMETHEUS METRICS AVAILABLE AT{' '}
+                <code style={{ background: 'var(--bg-card)', padding: '4px 8px', border: 'var(--border-width-thick) solid var(--border-color)', color: 'var(--text-primary)' }}>
                     /metrics
                 </code>
             </div>

@@ -74,13 +74,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {NAV_CATEGORIES.map((category) => (
                         <div key={category.title} style={{ marginBottom: 24 }}>
                             <div style={{
-                                fontSize: 11,
+                                fontSize: 13,
                                 textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                                color: 'var(--text-muted)',
-                                padding: '0 12px',
-                                marginBottom: 8,
-                                fontWeight: 700
+                                letterSpacing: '1px',
+                                color: 'var(--text-primary)',
+                                padding: '4px 12px',
+                                marginBottom: 12,
+                                fontWeight: 700,
+                                borderBottom: 'var(--border-width-thick) solid var(--accent-blue)',
+                                display: 'inline-block'
                             }}>
                                 {category.title}
                             </div>
@@ -121,16 +123,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     position="top-right"
                     toastOptions={{
                         style: {
-                            background: 'var(--surface-bg)',
+                            background: 'var(--bg-card)',
                             color: 'var(--text-primary)',
-                            border: '1px solid var(--border-color)',
+                            border: 'var(--border-width-thick) solid var(--border-color)',
                             fontSize: 14,
+                            borderRadius: '0px',
+                            boxShadow: '4px 4px 0px 0px var(--border-color)',
+                            textTransform: 'uppercase',
+                            fontFamily: 'var(--font-mono)'
                         },
                         success: {
-                            iconTheme: { primary: 'var(--color-success)', secondary: '#fff' },
+                            iconTheme: { primary: 'var(--color-success)', secondary: '#000' },
                         },
                         error: {
-                            iconTheme: { primary: 'var(--color-error)', secondary: '#fff' },
+                            iconTheme: { primary: 'var(--color-error)', secondary: '#000' },
                         }
                     }}
                 />

@@ -12,6 +12,7 @@ import { EventProcessingStatus } from '../../domain/events/event.types.js';
 import type { Device } from '../../domain/devices/device.entity.js';
 import type { WebSocketGateway } from '../../infrastructure/websocket/ws-gateway.js';
 import type { DlqService } from './dlq.service.js';
+import type { AlertService } from './alert.service.js';
 
 // ---------------------------------------------------------------------------
 // EventProcessingService
@@ -26,6 +27,7 @@ export class EventProcessingService {
         private readonly cacheAdapter: ICacheAdapter,
         private readonly wsGateway: WebSocketGateway,
         private readonly dlqService: DlqService,
+        private readonly alertService: AlertService,
     ) { }
 
     /**
@@ -91,6 +93,18 @@ export class EventProcessingService {
                     });
                     await this.dlqService.moveToDeadLetter(client, persistedEvent.id, 'simulated_failure_to_trigger_dlq');
                     return true; // We return true so the DB transaction commits saving the DLQ entry
+                }
+
+                if (event.eventType === 'ALERT_TRIGGERED') {
+                    const payload = event.payload as Record<string, unknown>;
+                    await this.alertService.createAlert({
+                        deviceId: device.id,
+                        deviceUuid: device.deviceUuid,
+                        metric: String(payload.metric),
+                        value: Number(payload.value),
+                        threshold: Number(payload.threshold),
+                        severity: String(payload.severity).toLowerCase() as any,
+                    }, persistedEvent.id);
                 }
 
                 // 4. Update device status if applicable

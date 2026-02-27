@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SmartAccess Brutalist Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Roboto+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#06f906",
+                        "background-light": "#f5f8f5",
+                        "background-dark": "#000000",
+                    },
+                    fontFamily: {
+                        "display": ["Roboto Mono", "monospace"],
+                        "mono": ["Roboto Mono", "monospace"]
+                    },
+                    borderWidth: {
+                        '3': '3px',
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "0px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Roboto Mono', monospace;
+            text-transform: uppercase;
+        }
+        .brutalist-shadow {
+            box-shadow: 6px 6px 0px 0px #06f906;
+        }
+        .brutalist-border {
+            border: 3px solid #ffffff;
+        }
+        .brutalist-border-green {
+            border: 3px solid #06f906;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-dark text-slate-100 min-h-screen flex flex-col">
+<!-- Header Section -->
+<header class="brutalist-border bg-background-dark p-4 m-4 mb-2 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-3xl">terminal</span>
+<h1 class="text-2xl font-bold tracking-tighter">SMARTACCESS</h1>
+</div>
+<button class="brutalist-border-green bg-primary text-black p-1">
+<span class="material-symbols-outlined font-bold">menu</span>
+</button>
+</header>
+<div class="flex flex-1 overflow-hidden px-4 gap-4">
+<!-- Sidebar Navigation (Hidden on small mobile usually, but styled brutalist here) -->
+<nav class="hidden md:flex flex-col gap-4 w-64 shrink-0">
+<div class="brutalist-border bg-primary text-black p-3 font-bold">GENERAL</div>
+<div class="brutalist-border p-3 hover:bg-primary/20 transition-colors">IOT ASSETS</div>
+<div class="brutalist-border p-3 hover:bg-primary/20 transition-colors">SYSTEM &amp; HEALTH</div>
+<div class="brutalist-border p-3 hover:bg-primary/20 transition-colors">ADMINISTRATION</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col gap-6 overflow-y-auto pb-24">
+<!-- Hero Title -->
+<section>
+<h2 class="text-5xl font-bold leading-none text-primary italic mb-2 tracking-tighter">SYSTEM METRICS</h2>
+<div class="h-1 bg-white w-full"></div>
+</section>
+<!-- Metric Cards -->
+<section class="grid grid-cols-1 gap-6">
+<div class="brutalist-border bg-background-dark p-6 brutalist-shadow">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-sm font-bold text-slate-400">CPU LOAD</p>
+<p class="text-6xl font-bold text-white">42%</p>
+</div>
+<span class="material-symbols-outlined text-primary text-4xl">memory</span>
+</div>
+</div>
+<div class="brutalist-border bg-background-dark p-6 brutalist-shadow">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-sm font-bold text-slate-400">MEMORY</p>
+<p class="text-6xl font-bold text-white">68%</p>
+</div>
+<span class="material-symbols-outlined text-primary text-4xl">database</span>
+</div>
+</div>
+<div class="brutalist-border bg-background-dark p-6 brutalist-shadow">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-sm font-bold text-slate-400">DEVICES</p>
+<p class="text-6xl font-bold text-white">12</p>
+</div>
+<span class="material-symbols-outlined text-primary text-4xl">router</span>
+</div>
+</div>
+</section>
+<!-- Data Table Section -->
+<section class="mt-4">
+<h3 class="text-xl font-bold mb-4 bg-white text-black inline-block px-2">LIVE_FEED_DATA</h3>
+<div class="brutalist-border overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="brutalist-border bg-primary text-black">
+<th class="p-2 border-r-3 border-black">ASSET_ID</th>
+<th class="p-2 border-r-3 border-black">STATUS</th>
+<th class="p-2">RSSI</th>
+</tr>
+</thead>
+<tbody class="divide-y-3 divide-white">
+<tr class="bg-background-dark">
+<td class="p-2 border-r-3 border-white">NODE_001</td>
+<td class="p-2 border-r-3 border-white text-primary">ACTIVE</td>
+<td class="p-2">-64db</td>
+</tr>
+<tr class="bg-slate-900">
+<td class="p-2 border-r-3 border-white">NODE_042</td>
+<td class="p-2 border-r-3 border-white text-primary">ACTIVE</td>
+<td class="p-2">-12db</td>
+</tr>
+<tr class="bg-background-dark">
+<td class="p-2 border-r-3 border-white">GATE_X</td>
+<td class="p-2 border-r-3 border-white text-red-500">ERROR</td>
+<td class="p-2">NULL</td>
+</tr>
+<tr class="bg-slate-900">
+<td class="p-2 border-r-3 border-white">SENSOR_9</td>
+<td class="p-2 border-r-3 border-white text-primary">ACTIVE</td>
+<td class="p-2">-88db</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Map Replacement / Visual Component -->
+<section class="brutalist-border h-48 relative overflow-hidden bg-slate-900">
+<div class="absolute inset-0 flex items-center justify-center opacity-30">
+<span class="material-symbols-outlined scale-[10] text-primary">grid_view</span>
+</div>
+<div class="absolute top-2 left-2 bg-black brutalist-border-green px-2 py-1 text-xs text-primary font-bold">
+                    LOCATION_COORDS: 40.7128° N, 74.0060° W
+                </div>
+<img alt="Gritty high contrast map of city grid" class="w-full h-full object-cover grayscale contrast-150" data-location="New York City" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFP5HyoOhnO4L9lzTsaPOYzuE-9RueoyGqYGNTqek-JnyaGBAF_Xz_nElv3fOogkDTxKS2Q418qtUXRXbOWHf0CzQKeSxTK9twyYzNz-KpygQE4Q-4LyAZQ10C3-GQF-_L22b09frB0Tnga684234qMc5_jQMqNvDRwjAmSsJZ4IWt8oq0ZX4NTblJg8NFB1zxPxAFPusbzNegsf3o-4h5BbGhPQVLrqtJw0WpyUI1MTZ199WwYfF6Hq8GCPpocETnyR8RNINYYvjL"/>
+</section>
+</main>
+</div>
+<!-- Bottom Navigation Bar -->
+<footer class="fixed bottom-0 left-0 right-0 bg-background-dark brutalist-border m-4 mt-0 z-50">
+<div class="flex justify-around items-center h-16">
+<a class="flex flex-col items-center justify-center text-primary group" href="#">
+<span class="material-symbols-outlined text-3xl group-hover:bg-primary group-hover:text-black transition-colors p-1">grid_view</span>
+</a>
+<a class="flex flex-col items-center justify-center text-white group" href="#">
+<span class="material-symbols-outlined text-3xl group-hover:bg-primary group-hover:text-black transition-colors p-1">settings_input_component</span>
+</a>
+<a class="flex flex-col items-center justify-center text-white group" href="#">
+<span class="material-symbols-outlined text-3xl group-hover:bg-primary group-hover:text-black transition-colors p-1">show_chart</span>
+</a>
+<a class="flex flex-col items-center justify-center text-white group" href="#">
+<span class="material-symbols-outlined text-3xl group-hover:bg-primary group-hover:text-black transition-colors p-1">security</span>
+</a>
+</div>
+</footer>
+</body></html>

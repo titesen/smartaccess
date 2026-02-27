@@ -3,64 +3,66 @@
    Dark theme with glassmorphism and vibrant accents
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;700&display=swap');
 
 /* --------------------------------------------------------------------------
    CSS Custom Properties
    -------------------------------------------------------------------------- */
 
 :root {
-    /* Color Palette */
-    --bg-primary: #0a0e17;
-    --bg-secondary: #111827;
-    --bg-card: rgba(17, 24, 39, 0.7);
-    --bg-card-hover: rgba(31, 41, 55, 0.8);
-    --bg-glass: rgba(255, 255, 255, 0.04);
-    --bg-input: rgba(255, 255, 255, 0.06);
+    /* Color Palette - Brutalist Green */
+    --bg-primary: #000000;
+    --bg-secondary: #000000;
+    --bg-card: #000000;
+    --bg-card-hover: #111111;
+    --bg-glass: transparent;
+    --bg-input: #000000;
 
-    --text-primary: #f9fafb;
+    --text-primary: #ffffff;
     --text-secondary: #9ca3af;
     --text-muted: #6b7280;
-    --text-accent: #60a5fa;
+    --text-accent: #06f906;
 
-    --accent-blue: #3b82f6;
-    --accent-blue-hover: #2563eb;
-    --accent-green: #10b981;
-    --accent-green-dim: rgba(16, 185, 129, 0.15);
-    --accent-red: #ef4444;
-    --accent-red-dim: rgba(239, 68, 68, 0.15);
-    --accent-yellow: #f59e0b;
-    --accent-yellow-dim: rgba(245, 158, 11, 0.15);
-    --accent-purple: #8b5cf6;
-    --accent-purple-dim: rgba(139, 92, 246, 0.15);
-    --accent-cyan: #06b6d4;
+    --accent-blue: #06f906;
+    /* Map primary accent to neon green */
+    --accent-blue-hover: #ffffff;
+    --accent-green: #06f906;
+    --accent-green-dim: rgba(6, 249, 6, 0.15);
+    --accent-red: #ff0000;
+    --accent-red-dim: rgba(255, 0, 0, 0.15);
+    --accent-yellow: #ffff00;
+    --accent-yellow-dim: rgba(255, 255, 0, 0.15);
+    --accent-purple: #ff00ff;
+    --accent-purple-dim: rgba(255, 0, 255, 0.15);
+    --accent-cyan: #00ffff;
 
-    --border-color: rgba(255, 255, 255, 0.08);
-    --border-active: rgba(59, 130, 246, 0.5);
+    --border-color: #ffffff;
+    --border-active: #06f906;
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-    --shadow-glow-blue: 0 0 20px rgba(59, 130, 246, 0.2);
+    /* Brutalist Shadows */
+    --shadow-sm: 2px 2px 0px 0px #06f906;
+    --shadow-md: 4px 4px 0px 0px #06f906;
+    --shadow-lg: 6px 6px 0px 0px #06f906;
+    --shadow-glow-blue: 6px 6px 0px 0px #ffffff;
 
     /* Typography */
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-mono: 'Geist Mono', 'JetBrains Mono', monospace;
+    --font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'Roboto Mono', 'Geist Mono', 'JetBrains Mono', monospace;
 
     /* Spacing */
     --sidebar-width: 260px;
+    --border-width-thick: 3px;
 
-    /* Transitions */
-    --transition-fast: 150ms ease;
-    --transition-base: 250ms ease;
-    --transition-slow: 400ms ease;
+    /* Transitions - Snap rather than fade for brutalist feel */
+    --transition-fast: 50ms ease;
+    --transition-base: 100ms ease;
+    --transition-slow: 150ms ease;
 
-    /* Radius */
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 16px;
-    --radius-xl: 24px;
+    /* Radius - NO ROUNDED CORNERS */
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
+    --radius-xl: 0px;
 }
 
 /* --------------------------------------------------------------------------
@@ -81,7 +83,8 @@ html {
 }
 
 body {
-    font-family: var(--font-sans);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
     background: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.6;
@@ -135,18 +138,21 @@ a:hover {
 .app-sidebar__logo-icon {
     width: 36px;
     height: 36px;
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    border: 3px solid var(--accent-blue);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
+    color: var(--accent-blue);
+    font-family: var(--font-mono);
 }
 
 .app-sidebar__logo-text {
     font-weight: 700;
     font-size: 18px;
-    letter-spacing: -0.3px;
+    letter-spacing: 1px;
+    color: var(--text-primary);
 }
 
 .app-sidebar__nav {
@@ -171,13 +177,18 @@ a:hover {
 }
 
 .app-sidebar__link:hover {
-    background: var(--bg-glass);
-    color: var(--text-primary);
+    background: var(--accent-blue);
+    color: var(--bg-primary);
+    border: 1px solid var(--accent-blue);
 }
 
 .app-sidebar__link--active {
-    background: rgba(59, 130, 246, 0.12);
-    color: var(--accent-blue);
+    background: var(--accent-blue);
+    color: var(--bg-primary);
+    font-weight: 700;
+    border: 1px solid var(--accent-blue);
+    box-shadow: 4px 4px 0px 0px var(--border-color);
+    transform: translate(-2px, -2px);
 }
 
 .app-sidebar__link-icon {
@@ -223,16 +234,17 @@ a:hover {
 
 .card {
     background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    border: var(--border-width-thick) solid var(--border-color);
     border-radius: var(--radius-lg);
     padding: 24px;
-    backdrop-filter: blur(12px);
-    transition: all var(--transition-base);
+    box-shadow: var(--shadow-lg);
+    transition: all var(--transition-fast);
 }
 
 .card:hover {
     border-color: var(--border-active);
-    box-shadow: var(--shadow-glow-blue);
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0px 0px var(--border-color);
 }
 
 .card__header {
@@ -287,11 +299,30 @@ a:hover {
     flex-shrink: 0;
 }
 
-.stat-card__icon--blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
-.stat-card__icon--green { background: var(--accent-green-dim); color: var(--accent-green); }
-.stat-card__icon--red { background: var(--accent-red-dim); color: var(--accent-red); }
-.stat-card__icon--yellow { background: var(--accent-yellow-dim); color: var(--accent-yellow); }
-.stat-card__icon--purple { background: var(--accent-purple-dim); color: var(--accent-purple); }
+.stat-card__icon--blue {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--accent-blue);
+}
+
+.stat-card__icon--green {
+    background: var(--accent-green-dim);
+    color: var(--accent-green);
+}
+
+.stat-card__icon--red {
+    background: var(--accent-red-dim);
+    color: var(--accent-red);
+}
+
+.stat-card__icon--yellow {
+    background: var(--accent-yellow-dim);
+    color: var(--accent-yellow);
+}
+
+.stat-card__icon--purple {
+    background: var(--accent-purple-dim);
+    color: var(--accent-purple);
+}
 
 /* --------------------------------------------------------------------------
    Status Badge
@@ -302,22 +333,59 @@ a:hover {
     align-items: center;
     gap: 6px;
     padding: 4px 10px;
-    border-radius: 999px;
+    border: 2px solid currentColor;
+    border-radius: var(--radius-sm);
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    font-family: var(--font-mono);
 }
 
-.badge--online { background: var(--accent-green-dim); color: var(--accent-green); }
-.badge--offline { background: rgba(107, 114, 128, 0.2); color: var(--text-secondary); }
-.badge--error { background: var(--accent-red-dim); color: var(--accent-red); }
-.badge--maintenance { background: var(--accent-yellow-dim); color: var(--accent-yellow); }
-.badge--registered { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
-.badge--processed { background: var(--accent-green-dim); color: var(--accent-green); }
-.badge--failed { background: var(--accent-red-dim); color: var(--accent-red); }
-.badge--received { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
-.badge--retry { background: var(--accent-yellow-dim); color: var(--accent-yellow); }
+.badge--online {
+    background: var(--accent-green-dim);
+    color: var(--accent-green);
+}
+
+.badge--offline {
+    background: rgba(107, 114, 128, 0.2);
+    color: var(--text-secondary);
+}
+
+.badge--error {
+    background: var(--accent-red-dim);
+    color: var(--accent-red);
+}
+
+.badge--maintenance {
+    background: var(--accent-yellow-dim);
+    color: var(--accent-yellow);
+}
+
+.badge--registered {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--accent-blue);
+}
+
+.badge--processed {
+    background: var(--accent-green-dim);
+    color: var(--accent-green);
+}
+
+.badge--failed {
+    background: var(--accent-red-dim);
+    color: var(--accent-red);
+}
+
+.badge--received {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--accent-blue);
+}
+
+.badge--retry {
+    background: var(--accent-yellow-dim);
+    color: var(--accent-yellow);
+}
 
 .badge__dot {
     width: 6px;
@@ -328,8 +396,15 @@ a:hover {
 }
 
 @keyframes pulse-dot {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
 }
 
 /* --------------------------------------------------------------------------
@@ -339,8 +414,9 @@ a:hover {
 .table-container {
     overflow-x: auto;
     border-radius: var(--radius-lg);
-    border: 1px solid var(--border-color);
+    border: var(--border-width-thick) solid var(--border-color);
     background: var(--bg-card);
+    box-shadow: var(--shadow-md);
 }
 
 .table {
@@ -352,20 +428,25 @@ a:hover {
 .table th {
     text-align: left;
     padding: 12px 16px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 13px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid var(--border-color);
+    letter-spacing: 1px;
+    border-bottom: var(--border-width-thick) solid var(--border-color);
+    border-right: 1px solid var(--border-color);
     white-space: nowrap;
+    background: var(--accent-blue);
+    color: var(--bg-primary);
 }
 
 .table td {
     padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: var(--border-width-thick) solid var(--border-color);
+    border-right: 1px solid var(--border-color);
     vertical-align: middle;
     white-space: nowrap;
+    font-family: var(--font-mono);
 }
 
 .table tbody tr {
@@ -391,21 +472,27 @@ a:hover {
     padding: 10px 18px;
     border-radius: var(--radius-sm);
     font-size: 14px;
-    font-weight: 600;
-    font-family: var(--font-sans);
+    font-weight: 700;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 1px;
     cursor: pointer;
-    border: none;
+    border: var(--border-width-thick) solid var(--border-color);
+    box-shadow: var(--shadow-sm);
     transition: all var(--transition-fast);
 }
 
 .btn--primary {
     background: var(--accent-blue);
-    color: white;
+    color: var(--bg-primary);
+    border-color: var(--accent-blue);
 }
 
 .btn--primary:hover {
-    background: var(--accent-blue-hover);
-    box-shadow: var(--shadow-glow-blue);
+    background: var(--bg-primary);
+    color: var(--accent-blue);
+    transform: translate(2px, 2px);
+    box-shadow: 0px 0px 0px 0px var(--accent-blue);
 }
 
 .btn--ghost {
@@ -449,10 +536,10 @@ a:hover {
     width: 100%;
     padding: 10px 14px;
     background: var(--bg-input);
-    border: 1px solid var(--border-color);
+    border: var(--border-width-thick) solid var(--border-color);
     border-radius: var(--radius-sm);
     color: var(--text-primary);
-    font-family: var(--font-sans);
+    font-family: var(--font-mono);
     font-size: 14px;
     outline: none;
     transition: border-color var(--transition-fast);
@@ -460,7 +547,7 @@ a:hover {
 
 .form-input:focus {
     border-color: var(--accent-blue);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    box-shadow: 4px 4px 0px 0px var(--accent-blue);
 }
 
 .form-input::placeholder {
@@ -487,9 +574,8 @@ a:hover {
     max-width: 400px;
     padding: 40px;
     background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    border: var(--border-width-thick) solid var(--border-color);
     border-radius: var(--radius-xl);
-    backdrop-filter: blur(20px);
     box-shadow: var(--shadow-lg);
 }
 
@@ -556,8 +642,15 @@ a:hover {
 }
 
 @keyframes slide-in {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* --------------------------------------------------------------------------
@@ -612,10 +705,10 @@ a:hover {
 
 .monitoring-card {
     background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    border: var(--border-width-thick) solid var(--accent-blue);
     border-radius: var(--radius-lg);
     padding: 24px;
-    backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-lg);
     transition: border-color var(--transition-base);
 }
 
@@ -644,8 +737,15 @@ a:hover {
    -------------------------------------------------------------------------- */
 
 @keyframes event-row-fade {
-    from { opacity: 0; transform: translateX(-8px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .event-row-enter {
@@ -687,6 +787,7 @@ select.form-input {
    -------------------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -708,4 +809,3 @@ select.form-input {
         animation: none !important;
     }
 }
-

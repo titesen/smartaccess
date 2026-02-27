@@ -51,17 +51,18 @@ export default function MonitoringAlertsPage() {
 
             <div className="app-header">
                 <div>
-                    <h1 className="app-header__title">Alerts</h1>
-                    <p className="app-header__subtitle">
-                        {active.length} active · {acknowledged.length} acknowledged
+                    <h1 className="app-header__title" style={{ fontSize: 44, color: 'var(--accent-red)', fontStyle: 'italic', textTransform: 'uppercase' }}>System Alerts</h1>
+                    <div style={{ height: '4px', background: 'var(--border-color)', width: '100%', marginBottom: '8px' }}></div>
+                    <p className="app-header__subtitle" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                        {active.length} ACTIVE // {acknowledged.length} ACKNOWLEDGED
                     </p>
                 </div>
-                <button className="btn btn--ghost btn--sm" onClick={load}>↻ Refresh</button>
+                <button className="btn btn--primary" onClick={load}>RELOAD</button>
             </div>
 
             {/* Active Alerts */}
-            <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>
-                🔴 Active Alerts
+            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, backgroundColor: 'var(--border-color)', display: 'inline-block', padding: '4px 8px', color: 'var(--bg-primary)' }}>
+                [ ! ] ACTIVE ALERTS
             </h2>
             <div className="table-container" style={{ marginBottom: 32 }}>
                 <table className="table">
@@ -107,8 +108,8 @@ export default function MonitoringAlertsPage() {
             </div>
 
             {/* Acknowledged */}
-            <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, color: 'var(--text-secondary)' }}>
-                ✅ Acknowledged
+            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, marginTop: 32, display: 'inline-block', padding: '4px 8px', border: 'var(--border-width-thick) solid var(--text-secondary)' }}>
+                [ OK ] ACKNOWLEDGED
             </h2>
             <div className="table-container">
                 <table className="table">

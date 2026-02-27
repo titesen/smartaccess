@@ -7,7 +7,7 @@
  * for API calls. Enables offline support and faster subsequent loads.
  */
 
-const CACHE_NAME = 'smartaccess-v1';
+const CACHE_NAME = 'smartaccess-v2';
 const STATIC_ASSETS = [
     '/',
     '/dashboard',
@@ -55,8 +55,8 @@ sw.addEventListener('activate', (event: ExtendableEvent) => {
 sw.addEventListener('fetch', (event: FetchEvent) => {
     const url = new URL(event.request.url);
 
-    // API calls → network-first with short cache
-    if (url.pathname.startsWith('/api/') || url.pathname === '/health') {
+    // API calls and HTML Navigation → network-first
+    if (url.pathname.startsWith('/api/') || url.pathname === '/health' || event.request.mode === 'navigate') {
         event.respondWith(networkFirst(event.request));
         return;
     }
@@ -66,7 +66,7 @@ sw.addEventListener('fetch', (event: FetchEvent) => {
         return;
     }
 
-    // Static assets → cache-first
+    // Static assets (CSS/JS) → cache-first
     event.respondWith(cacheFirst(event.request));
 });
 
