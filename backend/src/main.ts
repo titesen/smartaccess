@@ -24,6 +24,7 @@ import { EventProcessingService } from './application/services/event-processing.
 import { DlqService } from './application/services/dlq.service.js';
 import { DeviceService } from './application/services/device.service.js';
 import { AuthService } from './application/services/auth.service.js';
+import { AlertService } from './application/services/alert.service.js';
 import { EventConsumer } from './application/consumers/event.consumer.js';
 
 // Infrastructure — resilience
@@ -33,6 +34,8 @@ import { OutboxProcessor } from './infrastructure/outbox/outbox.processor.js';
 import { createDeviceRoutes } from './application/routes/device.routes.js';
 import { createEventRoutes } from './application/routes/event.routes.js';
 import { createAuthRoutes } from './application/routes/auth.routes.js';
+import { createAlertRoutes } from './application/routes/alert.routes.js';
+import { createMetricRoutes } from './application/routes/metric.routes.js';
 
 // Middleware
 import { errorHandler } from './application/middleware/error-handler.js';
@@ -77,6 +80,7 @@ const eventProcessingService = new EventProcessingService(
 
 const deviceService = new DeviceService(deviceRepo, cacheAdapter);
 const authService = new AuthService(userRepo, auditRepo);
+const alertService = new AlertService();
 const eventConsumer = new EventConsumer(brokerAdapter, eventProcessingService);
 const outboxProcessor = new OutboxProcessor(outboxRepo, brokerAdapter);
 
@@ -120,6 +124,8 @@ app.use('/api/auth', createAuthRoutes(authService));
 
 app.use('/api/devices', authMiddleware, createDeviceRoutes(deviceService));
 app.use('/api/events', authMiddleware, requireRole(UserRole.ADMIN, UserRole.OPERATOR), createEventRoutes(eventRepo));
+app.use('/api/alerts', authMiddleware, createAlertRoutes(alertService));
+app.use('/api/metrics', authMiddleware, createMetricRoutes());
 
 // Error handler (must be last)
 app.use(errorHandler);

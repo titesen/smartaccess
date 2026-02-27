@@ -147,15 +147,28 @@ export class AlertService {
     }
 
     /**
-     * Get recent alerts from the audit log.
+     * Get recent alerts from the audit log, including acknowledgment status.
      */
-    async getRecentAlerts(limit = 50): Promise<unknown[]> {
+    async getRecentAlerts(limit = 50): Promise<any[]> {
         const result = await this.pool.query(
-            `SELECT id, event_type, aggregate_id, new_state, actor, created_at
-             FROM audit_log
-             WHERE event_type = 'ALERT_TRIGGERED'
-             AND category = 'DOMAIN'
-             ORDER BY created_at DESC
+            `SELECT
+                a.id,
+                a.event_type AS action,
+                a.aggregate_type AS "entityType",
+                a.aggregate_id AS "entityId",
+                a.new_state AS details,
+                a.new_state->>'severity' AS severity,
+                a.correlation_id AS "correlationId",
+                a.created_at AS "createdAt",
+                EXISTS (
+                    SELECT 1 FROM audit_log ack
+                    WHERE ack.event_type = 'ALERT_ACKNOWLEDGED'
+                    AND ack.aggregate_id = a.id::text
+                ) AS acknowledged
+             FROM audit_log a
+             WHERE a.event_type = 'ALERT_TRIGGERED'
+             AND a.category = 'DOMAIN'
+             ORDER BY a.created_at DESC
              LIMIT $1`,
             [limit],
         );
