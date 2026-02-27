@@ -5,6 +5,7 @@ import { logger } from '../../shared/logger/logger.js';
 
 // Extend Express Request
 declare global {
+    // eslint-disable-next-line @typescript-eslint/no-namespace
     namespace Express {
         interface Request {
             user?: AuthUser;

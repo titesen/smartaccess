@@ -29,6 +29,18 @@ interface AlertRecord {
     created_at: Date;
 }
 
+interface AlertRow {
+    id: number;
+    action: string;
+    entityType: string;
+    entityId: string;
+    details: Record<string, unknown>;
+    severity: string | null;
+    correlationId: string | null;
+    createdAt: Date;
+    acknowledged: boolean;
+}
+
 /**
  * Service for managing alerts triggered by threshold breaches.
  *
@@ -149,7 +161,7 @@ export class AlertService {
     /**
      * Get recent alerts from the audit log, including acknowledgment status.
      */
-    async getRecentAlerts(limit = 50): Promise<any[]> {
+    async getRecentAlerts(limit = 50): Promise<AlertRow[]> {
         const result = await this.pool.query(
             `SELECT
                 a.id,

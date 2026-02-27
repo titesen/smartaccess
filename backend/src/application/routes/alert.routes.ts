@@ -1,6 +1,12 @@
-import { Router, Request, Response } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { AlertService } from '../services/alert.service.js';
 import { getPool } from '../../infrastructure/database/connection.js';
+import type { AuthUser } from '../../domain/auth/auth.types.js';
+
+// Extend Request for the typed user property attached by auth middleware
+interface AuthRequest extends Request {
+    user?: AuthUser;
+}
 
 export function createAlertRoutes(alertService: AlertService): Router {
     const router = Router();
@@ -11,7 +17,7 @@ export function createAlertRoutes(alertService: AlertService): Router {
             const limit = parseInt(req.query.limit as string, 10) || 50;
             const alerts = await alertService.getRecentAlerts(limit);
             res.json({ data: alerts });
-        } catch (err) {
+        } catch {
             res.status(500).json({ error: 'Failed to fetch alerts' });
         }
     });
@@ -21,13 +27,10 @@ export function createAlertRoutes(alertService: AlertService): Router {
         const pool = getPool();
         const client = await pool.connect();
         try {
-            // Get user from the JWT middleware if present, otherwise default to SYSTEM
-            const user = (req as any).user;
-            const actor = user ? user.email : 'SYSTEM';
-
+            const actor = (req as AuthRequest).user?.email ?? 'SYSTEM';
             await alertService.acknowledgeAlert(client, parseInt(req.params.id, 10), actor);
             res.json({ success: true });
-        } catch (err) {
+        } catch {
             res.status(500).json({ error: 'Failed to acknowledge alert' });
         } finally {
             client.release();

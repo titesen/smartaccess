@@ -46,15 +46,15 @@ export async function initTracing(config: Partial<TracingConfig> = {}): Promise<
 
     try {
         // Dynamic import — allows app to run without OTel packages installed
-        // @ts-ignore — optional dependency, not in package.json
+        // @ts-expect-error — optional dependency, not in package.json
         const { NodeSDK } = await import('@opentelemetry/sdk-node');
-        // @ts-ignore — optional dependency
+        // @ts-expect-error — optional dependency
         const { getNodeAutoInstrumentations } = await import('@opentelemetry/auto-instrumentations-node');
-        // @ts-ignore — optional dependency
+        // @ts-expect-error — optional dependency
         const { OTLPTraceExporter } = await import('@opentelemetry/exporter-trace-otlp-http');
-        // @ts-ignore — optional dependency
+        // @ts-expect-error — optional dependency
         const { Resource } = await import('@opentelemetry/resources');
-        // @ts-ignore — optional dependency
+        // @ts-expect-error — optional dependency
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { ATTR_SERVICE_NAME } = await import('@opentelemetry/semantic-conventions') as any;
 

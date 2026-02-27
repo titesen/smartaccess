@@ -3,7 +3,7 @@ import cors from 'cors';
 import http from 'node:http';
 import { env } from './config/env.js';
 import { logger } from './shared/logger/logger.js';
-import { connectDatabase, getDatabaseHealth, disconnectDatabase } from './infrastructure/database/connection.js';
+import { connectDatabase, getDatabaseHealth, disconnectDatabase, getPool } from './infrastructure/database/connection.js';
 import { connectBroker, getBrokerHealth, disconnectBroker } from './infrastructure/broker/connection.js';
 import { connectCache, getCacheHealth, disconnectCache } from './infrastructure/cache/connection.js';
 
@@ -30,11 +30,15 @@ import { EventConsumer } from './application/consumers/event.consumer.js';
 // Infrastructure — resilience
 import { OutboxProcessor } from './infrastructure/outbox/outbox.processor.js';
 
+// Seeder
+import { seedDefaultAdmin } from './infrastructure/seeder/admin.seeder.js';
+
 // Routes
 import { createDeviceRoutes } from './application/routes/device.routes.js';
 import { createEventRoutes } from './application/routes/event.routes.js';
 import { createAuthRoutes } from './application/routes/auth.routes.js';
 import { createAlertRoutes } from './application/routes/alert.routes.js';
+import { createAdminRoutes } from './application/routes/admin.routes.js';
 import { createMetricRoutes } from './application/routes/metric.routes.js';
 
 // Middleware
@@ -127,6 +131,7 @@ app.use('/api/devices', authMiddleware, createDeviceRoutes(deviceService));
 app.use('/api/events', authMiddleware, requireRole(UserRole.ADMIN, UserRole.OPERATOR), createEventRoutes(eventRepo));
 app.use('/api/alerts', authMiddleware, createAlertRoutes(alertService));
 app.use('/api/metrics', authMiddleware, createMetricRoutes());
+app.use('/api/admin', authMiddleware, requireRole(UserRole.ADMIN), createAdminRoutes(userRepo));
 
 // Error handler (must be last)
 app.use(errorHandler);
@@ -147,6 +152,14 @@ async function start(): Promise<void> {
             error: err instanceof Error ? err.message : String(err),
         });
         process.exit(1);
+    }
+
+    // Seed default admin user
+    const seedClient = await getPool().connect();
+    try {
+        await seedDefaultAdmin(seedClient, userRepo);
+    } finally {
+        seedClient.release();
     }
 
     // Start event consumer

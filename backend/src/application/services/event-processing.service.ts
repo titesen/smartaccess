@@ -97,13 +97,15 @@ export class EventProcessingService {
 
                 if (event.eventType === 'ALERT_TRIGGERED') {
                     const payload = event.payload as Record<string, unknown>;
+                    const severityRaw = String(payload.severity ?? 'info').toLowerCase();
+                    const severity = severityRaw as import('./alert.service.js').AlertSeverity;
                     await this.alertService.createAlert({
                         deviceId: device.id,
                         deviceUuid: device.deviceUuid,
                         metric: String(payload.metric),
                         value: Number(payload.value),
                         threshold: Number(payload.threshold),
-                        severity: String(payload.severity).toLowerCase() as any,
+                        severity,
                     }, persistedEvent.id);
                 }
 
