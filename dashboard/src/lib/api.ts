@@ -2,7 +2,10 @@
 // API client for SmartAccess backend
 // ---------------------------------------------------------------------------
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+// Use relative paths if we are in the browser, otherwise use the env var or default localhost
+const API_BASE = typeof window !== 'undefined'
+    ? (process.env.NEXT_PUBLIC_API_URL || '')
+    : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000');
 
 class ApiError extends Error {
     constructor(public status: number, message: string) {

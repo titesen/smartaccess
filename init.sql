@@ -280,7 +280,7 @@ CREATE TRIGGER tr_users_updated_at
 -- Replace by calling POST /api/auth/register once the system is up
 INSERT INTO users (email, password_hash, role) VALUES
     ('admin@smartaccess.io',
-     'REPLACE_WITH_SCRYPT_HASH',
+     '14ff939792e442f2c1623a318042a287:113bfb5d11e269349d8d8e1a01891cadb8a8869adef2c394449fa585dd570d90fbda3aa66decb9736af7dfeef8acaa5e5635f73491ea50194e7a0f52d83535f5',
      'ADMIN')
 ON CONFLICT (email) DO NOTHING;
 
