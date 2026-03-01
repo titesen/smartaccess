@@ -4,6 +4,23 @@ import { useState, useEffect } from 'react';
 import { fetchMetricsSummary, type MetricsSummary } from '../../../../lib/api';
 import Breadcrumbs from '../../../../components/navigation/Breadcrumbs';
 import Sparkline from '../../../../components/charts/Sparkline';
+import {
+    IconClock,
+    IconMessageCircle,
+    IconAlertCircle,
+    IconDeviceLaptop,
+    IconSkull,
+    IconBolt,
+    IconRefresh,
+    type Icon,
+} from '@tabler/icons-react';
+
+interface MetricCard {
+    label: string;
+    value: string;
+    Icon: Icon;
+    color: string;
+}
 
 export default function MetricsPage() {
     const [metrics, setMetrics] = useState<MetricsSummary | null>(null);
@@ -24,7 +41,7 @@ export default function MetricsPage() {
 
     useEffect(() => {
         load();
-        const interval = setInterval(load, 3000); // poll every 3s
+        const interval = setInterval(load, 3000);
         return () => clearInterval(interval);
     }, []);
 
@@ -34,14 +51,14 @@ export default function MetricsPage() {
         return `${h}h ${m}m`;
     };
 
-    const cards = metrics
+    const cards: MetricCard[] = metrics
         ? [
-            { label: 'Uptime', value: formatUptime(metrics.uptime), icon: '⏱️' },
-            { label: 'Events Processed', value: metrics.eventsProcessed.toLocaleString(), icon: '📨' },
-            { label: 'Events Failed', value: metrics.eventsFailed.toLocaleString(), icon: '❌' },
-            { label: 'Devices Online', value: `${metrics.devicesOnline} / ${metrics.devicesTotal}`, icon: '📡' },
-            { label: 'DLQ Size', value: metrics.dlqSize.toLocaleString(), icon: '☠️' },
-            { label: 'Avg Processing', value: `${metrics.avgProcessingMs.toFixed(1)} ms`, icon: '⚡' },
+            { label: 'Uptime', value: formatUptime(metrics.uptime), Icon: IconClock, color: 'var(--accent-blue)' },
+            { label: 'Events Processed', value: metrics.eventsProcessed.toLocaleString(), Icon: IconMessageCircle, color: 'var(--color-primary)' },
+            { label: 'Events Failed', value: metrics.eventsFailed.toLocaleString(), Icon: IconAlertCircle, color: 'var(--accent-red)' },
+            { label: 'Devices Online', value: `${metrics.devicesOnline} / ${metrics.devicesTotal}`, Icon: IconDeviceLaptop, color: 'var(--color-success)' },
+            { label: 'DLQ Size', value: metrics.dlqSize.toLocaleString(), Icon: IconSkull, color: 'var(--accent-red)' },
+            { label: 'Avg Processing', value: `${metrics.avgProcessingMs.toFixed(1)} ms`, Icon: IconBolt, color: 'var(--accent-blue)' },
         ]
         : [];
 
@@ -58,21 +75,19 @@ export default function MetricsPage() {
             <div className="app-header">
                 <div>
                     <h1 className="app-header__title" style={{ fontSize: 44, color: 'var(--accent-blue)', fontStyle: 'italic', textTransform: 'uppercase' }}>System Metrics</h1>
-                    <div style={{ height: '4px', background: 'var(--border-color)', width: '100%', marginBottom: '8px' }}></div>
+                    <div style={{ height: '4px', background: 'var(--border-color)', width: '100%', marginBottom: '8px' }} />
                     <p className="app-header__subtitle">
                         {loading ? 'Loading…' : 'Auto-refreshing every 3s'}
                     </p>
                 </div>
-                <button className="btn btn--primary" onClick={load}>Reload Data</button>
+                <button className="btn btn--primary" onClick={load} style={{ gap: 6 }}>
+                    <IconRefresh size={15} stroke={2} />
+                    Reload Data
+                </button>
             </div>
 
             {/* KPI Cards */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                gap: 16,
-                marginBottom: 32,
-            }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
                 {cards.map((card) => (
                     <div key={card.label} className="monitoring-card" style={{ display: 'flex', flexDirection: 'column', padding: '16px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%', flex: 1 }}>
@@ -80,7 +95,7 @@ export default function MetricsPage() {
                                 <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>{card.label}</p>
                                 <p style={{ fontSize: 42, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>{card.value}</p>
                             </div>
-                            <span style={{ fontSize: 32, paddingBottom: '4px' }}>{card.icon}</span>
+                            <card.Icon size={32} stroke={1.4} color={card.color} style={{ paddingBottom: 4, flexShrink: 0 }} />
                         </div>
                     </div>
                 ))}

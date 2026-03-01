@@ -6,41 +6,61 @@ import Link from 'next/link';
 import { Toaster } from 'react-hot-toast';
 import { isAuthenticated, getStoredUser, logout } from '../../lib/api';
 import SkipLink from '../../components/accessibility/SkipLink';
+import {
+    IconLayoutDashboard,
+    IconDeviceDesktopAnalytics,
+    IconBolt,
+    IconPlayerPlay,
+    IconSkull,
+    IconAlertTriangle,
+    IconChartBar,
+    IconHeartbeat,
+    IconUsers,
+    IconSettings,
+    IconShieldLock,
+    IconLogout,
+    type Icon,
+} from '@tabler/icons-react';
 
 type NavCategory = {
     title: string;
-    items: { href: string; icon: string; label: string; description: string }[];
+    items: {
+        href: string;
+        Icon: Icon;
+        label: string;
+        description: string;
+    }[];
 };
 
 const NAV_CATEGORIES: NavCategory[] = [
     {
         title: 'General',
         items: [
-            { href: '/dashboard', icon: '📊', label: 'Global Overview', description: 'High-level view of your IoT fleet, health, and recent activity.' },
+            { href: '/dashboard', Icon: IconLayoutDashboard, label: 'Global Overview', description: 'High-level view of your IoT fleet, health, and recent activity.' },
         ],
     },
     {
         title: 'IoT Assets & Data',
         items: [
-            { href: '/dashboard/devices', icon: '📡', label: 'Device Fleet', description: 'Manage, configure, and check the status of all registered devices.' },
-            { href: '/dashboard/events', icon: '⚡', label: 'Historical Events', description: 'Search and filter the permanent record of all processed events.' },
-            { href: '/dashboard/events/live', icon: '📺', label: 'Live Telemetry', description: 'Real-time WebSocket stream of incoming data from the devices.' },
-            { href: '/dashboard/events/dlq', icon: '☠️', label: 'Failed Events (DLQ)', description: 'Events that failed processing and need manual intervention.' },
+            { href: '/dashboard/devices', Icon: IconDeviceDesktopAnalytics, label: 'Device Fleet', description: 'Manage, configure, and check the status of all registered devices.' },
+            { href: '/dashboard/events', Icon: IconBolt, label: 'Historical Events', description: 'Search and filter the permanent record of all processed events.' },
+            { href: '/dashboard/events/live', Icon: IconPlayerPlay, label: 'Live Telemetry', description: 'Real-time WebSocket stream of incoming data from the devices.' },
+            { href: '/dashboard/events/dlq', Icon: IconSkull, label: 'Failed Events (DLQ)', description: 'Events that failed processing and need manual intervention.' },
         ],
     },
     {
         title: 'System & Health',
         items: [
-            { href: '/dashboard/monitoring', icon: '🚨', label: 'Critical Alerts', description: 'Actionable security and system alerts requiring attention.' },
-            { href: '/dashboard/monitoring/metrics', icon: '📈', label: 'Performance Metrics', description: 'KPIs for system throughput, latency, and uptime.' },
-            { href: '/dashboard/monitoring/health', icon: '💚', label: 'Infrastructure Health', description: 'Status of the core services (PostgreSQL, RabbitMQ, Redis).' },
+            { href: '/dashboard/monitoring', Icon: IconAlertTriangle, label: 'Critical Alerts', description: 'Actionable security and system alerts requiring attention.' },
+            { href: '/dashboard/monitoring/metrics', Icon: IconChartBar, label: 'Performance Metrics', description: 'KPIs for system throughput, latency, and uptime.' },
+            { href: '/dashboard/monitoring/health', Icon: IconHeartbeat, label: 'Infrastructure Health', description: 'Status of the core services (PostgreSQL, RabbitMQ, Redis).' },
         ],
     },
     {
         title: 'Administration',
         items: [
-            { href: '/dashboard/admin/users', icon: '👥', label: 'User Management', description: 'Manage operator access and role-based permissions.' },
-            { href: '/dashboard/admin/settings', icon: '⚙️', label: 'System Settings', description: 'Global platform configuration and variables.' },
+            { href: '/dashboard/admin/users', Icon: IconUsers, label: 'User Management', description: 'Manage operator access and role-based permissions.' },
+            { href: '/dashboard/admin/settings', Icon: IconSettings, label: 'System Settings', description: 'Global platform configuration and variables.' },
         ],
     }
 ];
@@ -58,7 +78,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setUser(getStoredUser());
     }, [router]);
 
-    if (!user) return null; // Loading state while checking auth
+    if (!user) return null;
 
     return (
         <div className="app-layout">
@@ -66,7 +86,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Sidebar */}
             <aside className="app-sidebar" role="navigation" aria-label="Main navigation">
                 <div className="app-sidebar__logo">
-                    <div className="app-sidebar__logo-icon">🔐</div>
+                    <div className="app-sidebar__logo-icon">
+                        <IconShieldLock size={28} stroke={2} />
+                    </div>
                     <span className="app-sidebar__logo-text">SmartAccess</span>
                 </div>
 
@@ -91,11 +113,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     key={item.href}
                                     href={item.href}
                                     title={item.description}
-                                    className={`app-sidebar__link ${pathname === item.href ? 'app-sidebar__link--active' : ''
-                                        }`}
+                                    className={`app-sidebar__link ${pathname === item.href ? 'app-sidebar__link--active' : ''}`}
                                     aria-current={pathname === item.href ? 'page' : undefined}
                                 >
-                                    <span className="app-sidebar__link-icon" aria-hidden="true">{item.icon}</span>
+                                    <span className="app-sidebar__link-icon" aria-hidden="true">
+                                        <item.Icon size={18} stroke={1.75} />
+                                    </span>
                                     {item.label}
                                 </Link>
                             ))}
@@ -110,7 +133,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
                         Role: {user.role}
                     </div>
-                    <button className="btn btn--ghost btn--sm" onClick={logout} style={{ width: '100%', justifyContent: 'center' }}>
+                    <button
+                        className="btn btn--ghost btn--sm"
+                        onClick={logout}
+                        style={{ width: '100%', justifyContent: 'center', gap: 6 }}
+                    >
+                        <IconLogout size={15} stroke={1.75} />
                         Sign Out
                     </button>
                 </div>
@@ -144,4 +172,3 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
     );
 }
-

@@ -36,9 +36,17 @@ export default function RootLayout({
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('[SW] Registered:', reg.scope))
-                    .catch(err => console.warn('[SW] Registration failed:', err));
+                  if (location.hostname === 'localhost') {
+                    // In development: unregister all service workers so hot-reload works
+                    navigator.serviceWorker.getRegistrations().then(regs => {
+                      regs.forEach(reg => reg.unregister());
+                      console.log('[SW] Unregistered in dev mode');
+                    });
+                  } else {
+                    navigator.serviceWorker.register('/sw.js')
+                      .then(reg => console.log('[SW] Registered:', reg.scope))
+                      .catch(err => console.warn('[SW] Registration failed:', err));
+                  }
                 });
               }
             `,

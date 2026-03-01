@@ -4,6 +4,15 @@ import { useState, useEffect } from 'react';
 import { fetchDevices, fetchHealth, type Device } from '../../lib/api';
 import { useWebSocket } from '../../hooks/use-websocket';
 import { toast } from 'react-hot-toast';
+import {
+    IconDeviceLaptop,
+    IconCircleCheck,
+    IconAlertTriangle,
+    IconCircleX,
+    IconWifi,
+    IconWifiOff,
+    IconRocket,
+} from '@tabler/icons-react';
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3000/ws';
 
@@ -28,30 +37,16 @@ export default function DashboardOverview() {
         load();
     }, []);
 
-    // Listen for WebSocket events to trigger real-time updates and notifications
     useEffect(() => {
         if (messages.length === 0) return;
-
         const latest = messages[0];
-        // Only react to the most recent message if it's new
-        // We'll use a simple heuristic: if it's an alert, show toast
         if (latest.type === 'ALERT_TRIGGERED') {
             toast.error(
                 `Critical Alert: Device ${latest.payload?.deviceId || 'Unknown'} reported an issue!`,
-                { id: `alert-${latest.timestamp}` } // Prevent duplicate toasts for same event
+                { id: `alert-${latest.timestamp}` }
             );
         }
-
-        // If it's a device-related event, optimistically refresh device counts and states
-        if ([
-            'DEVICE_CONNECTED',
-            'DEVICE_DISCONNECTED',
-            'MAINTENANCE',
-            'TELEMETRY_REPORTED',
-            'ALERT_TRIGGERED',
-            'FIRMWARE_UPDATED',
-            'ERROR_RECORDED'
-        ].includes(latest.type)) {
+        if (['DEVICE_CONNECTED', 'DEVICE_DISCONNECTED', 'MAINTENANCE', 'TELEMETRY_REPORTED', 'ALERT_TRIGGERED', 'FIRMWARE_UPDATED', 'ERROR_RECORDED'].includes(latest.type)) {
             fetchDevices().then(setDevices).catch(() => { });
         }
     }, [messages]);
@@ -65,41 +60,57 @@ export default function DashboardOverview() {
         <>
             {/* Header */}
             <div className="app-header">
-                <div>
-                    <h1 className="app-header__title">Dashboard</h1>
-                    <p className="app-header__subtitle">Real-time IoT overview</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    {/* DIAGNOSTIC: Remove this once Tabler icons are confirmed working */}
+                    <IconRocket size={48} stroke={1.5} color="#ff0000" style={{ flexShrink: 0 }} />
+                    <div>
+                        <h1 className="app-header__title">Dashboard</h1>
+                        <p className="app-header__subtitle">Real-time IoT overview</p>
+                    </div>
                 </div>
                 <div className="ws-status">
                     <span className={`ws-status__dot ${connected ? 'ws-status__dot--connected' : 'ws-status__dot--disconnected'}`} />
-                    {connected ? 'Live' : 'Disconnected'}
+                    {connected ? (
+                        <><IconWifi size={14} stroke={2} style={{ marginRight: 4 }} /> Live</>
+                    ) : (
+                        <><IconWifiOff size={14} stroke={2} style={{ marginRight: 4 }} /> Disconnected</>
+                    )}
                 </div>
             </div>
 
             {/* Stats */}
             <div className="stat-grid">
                 <div className="card stat-card">
-                    <div className="stat-card__icon stat-card__icon--blue">📡</div>
+                    <div className="stat-card__icon stat-card__icon--blue">
+                        <IconDeviceLaptop size={32} stroke={2} />
+                    </div>
                     <div>
                         <div className="card__value">{total}</div>
                         <div className="card__label">Total Devices</div>
                     </div>
                 </div>
                 <div className="card stat-card">
-                    <div className="stat-card__icon stat-card__icon--green">✅</div>
+                    <div className="stat-card__icon stat-card__icon--green">
+                        <IconCircleCheck size={32} stroke={2} />
+                    </div>
                     <div>
                         <div className="card__value">{online}</div>
                         <div className="card__label">Online</div>
                     </div>
                 </div>
                 <div className="card stat-card">
-                    <div className="stat-card__icon stat-card__icon--yellow">⚠️</div>
+                    <div className="stat-card__icon stat-card__icon--yellow">
+                        <IconAlertTriangle size={32} stroke={2} />
+                    </div>
                     <div>
                         <div className="card__value">{offline}</div>
                         <div className="card__label">Offline</div>
                     </div>
                 </div>
                 <div className="card stat-card">
-                    <div className="stat-card__icon stat-card__icon--red">🔴</div>
+                    <div className="stat-card__icon stat-card__icon--red">
+                        <IconCircleX size={32} stroke={2} />
+                    </div>
                     <div>
                         <div className="card__value">{error}</div>
                         <div className="card__label">Errors</div>

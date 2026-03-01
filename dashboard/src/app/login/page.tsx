@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { login } from '../../lib/api';
+import { IconShieldLock } from '@tabler/icons-react';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -32,9 +33,9 @@ export default function LoginPage() {
                 <div className="login-card__logo">
                     <div
                         className="app-sidebar__logo-icon"
-                        style={{ width: 56, height: 56, fontSize: 28, margin: '0 auto' }}
+                        style={{ width: 56, height: 56, fontSize: 28, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
-                        🔐
+                        <IconShieldLock size={32} stroke={1.75} />
                     </div>
                     <h1 className="login-card__title">SmartAccess</h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 4 }}>

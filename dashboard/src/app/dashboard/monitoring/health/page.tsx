@@ -3,6 +3,14 @@
 import { useState, useEffect } from 'react';
 import { fetchHealth } from '../../../../lib/api';
 import Breadcrumbs from '../../../../components/navigation/Breadcrumbs';
+import {
+    IconDatabase,
+    IconServer,
+    IconStack2,
+    IconCircleCheck,
+    IconCircleX,
+    IconRefresh,
+} from '@tabler/icons-react';
 
 interface HealthStatus {
     service: string;
@@ -10,6 +18,12 @@ interface HealthStatus {
     timestamp: string;
     checks: { database: string; rabbitmq: string; redis: string };
 }
+
+const COMPONENT_CONFIG = [
+    { name: 'PostgreSQL', key: 'database' as const, Icon: IconDatabase },
+    { name: 'RabbitMQ', key: 'rabbitmq' as const, Icon: IconServer },
+    { name: 'Redis', key: 'redis' as const, Icon: IconStack2 },
+];
 
 export default function HealthPage() {
     const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -36,19 +50,7 @@ export default function HealthPage() {
         return () => clearInterval(interval);
     }, []);
 
-    const statusColor = (status: string) =>
-        status === 'ok' || status === 'healthy' ? 'var(--color-success)' : 'var(--color-error)';
-
-    const statusIcon = (status: string) =>
-        status === 'ok' || status === 'healthy' ? '✅' : '❌';
-
-    const components = health
-        ? [
-            { name: 'PostgreSQL', key: 'database' as const, icon: '🐘' },
-            { name: 'RabbitMQ', key: 'rabbitmq' as const, icon: '🐇' },
-            { name: 'Redis', key: 'redis' as const, icon: '🔴' },
-        ]
-        : [];
+    const isOk = (status: string) => status === 'ok' || status === 'healthy';
 
     return (
         <>
@@ -67,7 +69,10 @@ export default function HealthPage() {
                         {loading ? 'Checking…' : 'Auto-checking every 15s'}
                     </p>
                 </div>
-                <button className="btn btn--ghost btn--sm" onClick={load}>↻ Refresh</button>
+                <button className="btn btn--ghost btn--sm" onClick={load} style={{ gap: 6 }}>
+                    <IconRefresh size={15} stroke={2} />
+                    Refresh
+                </button>
             </div>
 
             {/* Overall status */}
@@ -76,15 +81,16 @@ export default function HealthPage() {
                     <div style={{ fontSize: 18, color: 'var(--text-muted)' }}>Checking health…</div>
                 ) : error ? (
                     <>
-                        <div style={{ fontSize: 48, marginBottom: 8 }}>⚠️</div>
+                        <IconCircleX size={48} stroke={1.5} color="var(--color-error)" style={{ marginBottom: 8 }} />
                         <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-error)' }}>{error}</div>
                     </>
                 ) : health ? (
                     <>
-                        <div style={{ fontSize: 48, marginBottom: 8 }}>
-                            {health.status === 'healthy' ? '🟢' : '🔴'}
-                        </div>
-                        <div style={{ fontSize: 24, fontWeight: 700, color: statusColor(health.status), textTransform: 'uppercase' }}>
+                        {isOk(health.status)
+                            ? <IconCircleCheck size={48} stroke={1.5} color="var(--color-success)" style={{ marginBottom: 8 }} />
+                            : <IconCircleX size={48} stroke={1.5} color="var(--color-error)" style={{ marginBottom: 8 }} />
+                        }
+                        <div style={{ fontSize: 24, fontWeight: 700, color: isOk(health.status) ? 'var(--color-success)' : 'var(--color-error)', textTransform: 'uppercase' }}>
                             {health.status}
                         </div>
                         <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
@@ -96,24 +102,22 @@ export default function HealthPage() {
 
             {/* Component checks */}
             {health && (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                    gap: 16,
-                }}>
-                    {components.map((comp) => {
-                        const st = health.checks[comp.key];
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                    {COMPONENT_CONFIG.map(({ name, key, Icon }) => {
+                        const st = health.checks[key];
+                        const ok = isOk(st);
                         return (
-                            <div key={comp.key} className="monitoring-card" style={{ padding: 20 }}>
+                            <div key={key} className="monitoring-card" style={{ padding: 20 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                                    <span style={{ fontSize: 28 }}>{comp.icon}</span>
-                                    <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
-                                        {comp.name}
-                                    </span>
+                                    <Icon size={28} stroke={1.5} color={ok ? 'var(--color-success)' : 'var(--color-error)'} />
+                                    <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{name}</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <span>{statusIcon(st)}</span>
-                                    <span style={{ fontSize: 14, fontWeight: 600, color: statusColor(st), textTransform: 'uppercase' }}>
+                                    {ok
+                                        ? <IconCircleCheck size={18} stroke={2} color="var(--color-success)" />
+                                        : <IconCircleX size={18} stroke={2} color="var(--color-error)" />
+                                    }
+                                    <span style={{ fontSize: 14, fontWeight: 600, color: ok ? 'var(--color-success)' : 'var(--color-error)', textTransform: 'uppercase' }}>
                                         {st}
                                     </span>
                                 </div>

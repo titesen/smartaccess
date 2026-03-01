@@ -75,6 +75,8 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    pointer-events: auto !important;
+    /* DIAGNOSTIC */
 }
 
 html {
@@ -192,9 +194,13 @@ a:hover {
 }
 
 .app-sidebar__link-icon {
-    font-size: 18px;
     width: 20px;
-    text-align: center;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: inherit;
 }
 
 .app-sidebar__footer {
@@ -289,18 +295,18 @@ a:hover {
 }
 
 .stat-card__icon {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-md);
+    width: 52px;
+    height: 52px;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
     flex-shrink: 0;
+    color: inherit;
 }
 
 .stat-card__icon--blue {
-    background: rgba(59, 130, 246, 0.15);
+    background: rgba(6, 249, 6, 0.12);
     color: var(--accent-blue);
 }
 

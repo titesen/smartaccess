@@ -7,7 +7,7 @@
  * for API calls. Enables offline support and faster subsequent loads.
  */
 
-const CACHE_NAME = 'smartaccess-v2';
+const CACHE_NAME = 'smartaccess-v3';
 const STATIC_ASSETS = [
     '/',
     '/dashboard',
