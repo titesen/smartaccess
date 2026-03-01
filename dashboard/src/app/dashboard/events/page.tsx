@@ -18,13 +18,22 @@ const STATUS_BADGE: Record<string, string> = {
     DEAD_LETTERED: 'badge--error',
 };
 
-const TYPE_ICON: Record<string, string> = {
-    DEVICE_CONNECTED: '🟢',
-    DEVICE_DISCONNECTED: '🔴',
-    TELEMETRY_REPORTED: '📊',
-    ALERT_TRIGGERED: '🚨',
-    COMMAND_RECEIVED: '📥',
-    COMMAND_EXECUTED: '✅',
+import {
+    IconCircleCheckFilled,
+    IconCircleXFilled,
+    IconChartBar,
+    IconAlertTriangleFilled,
+    IconDatabaseImport,
+    IconCpu
+} from '@tabler/icons-react';
+
+const TYPE_ICON: Record<string, React.ReactNode> = {
+    DEVICE_CONNECTED: <IconCircleCheckFilled size={18} color="var(--accent-green)" />,
+    DEVICE_DISCONNECTED: <IconCircleXFilled size={18} color="var(--text-secondary)" />,
+    TELEMETRY_REPORTED: <IconChartBar size={18} color="var(--accent-blue)" />,
+    ALERT_TRIGGERED: <IconAlertTriangleFilled size={18} color="var(--accent-red)" />,
+    COMMAND_RECEIVED: <IconDatabaseImport size={18} color="var(--accent-purple)" />,
+    COMMAND_EXECUTED: <IconCpu size={18} color="var(--accent-cyan)" />,
 };
 
 const EVENT_TYPES = Object.keys(TYPE_ICON);
@@ -222,8 +231,8 @@ export default function EventsPage() {
                                     aria-label={`View event ${event.eventUuid}`}
                                 >
                                     <td>
-                                        <span style={{ marginRight: 8 }}>
-                                            {TYPE_ICON[event.eventType] || '📋'}
+                                        <span style={{ marginRight: 8, display: 'inline-flex', verticalAlign: 'middle' }}>
+                                            {TYPE_ICON[event.eventType] || <IconChartBar size={18} color="var(--text-secondary)" />}
                                         </span>
                                         <span style={{ fontSize: 13 }}>{event.eventType}</span>
                                     </td>

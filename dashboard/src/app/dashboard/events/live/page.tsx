@@ -11,13 +11,22 @@ interface LiveEvent {
     timestamp: string;
 }
 
-const TYPE_ICON: Record<string, string> = {
-    DEVICE_CONNECTED: '🟢',
-    DEVICE_DISCONNECTED: '🔴',
-    TELEMETRY_REPORTED: '📊',
-    ALERT_TRIGGERED: '🚨',
-    COMMAND_RECEIVED: '📥',
-    COMMAND_EXECUTED: '✅',
+import {
+    IconCircleCheckFilled,
+    IconCircleXFilled,
+    IconChartBar,
+    IconAlertTriangleFilled,
+    IconDatabaseImport,
+    IconCpu
+} from '@tabler/icons-react';
+
+const TYPE_ICON: Record<string, React.ReactNode> = {
+    DEVICE_CONNECTED: <IconCircleCheckFilled size={18} color="var(--accent-green)" />,
+    DEVICE_DISCONNECTED: <IconCircleXFilled size={18} color="var(--text-secondary)" />,
+    TELEMETRY_REPORTED: <IconChartBar size={18} color="var(--accent-blue)" />,
+    ALERT_TRIGGERED: <IconAlertTriangleFilled size={18} color="var(--accent-red)" />,
+    COMMAND_RECEIVED: <IconDatabaseImport size={18} color="var(--accent-purple)" />,
+    COMMAND_EXECUTED: <IconCpu size={18} color="var(--accent-cyan)" />,
 };
 
 const MAX_EVENTS = 200;
@@ -137,7 +146,9 @@ export default function LiveStreamPage() {
                                     style={{ animationDelay: `${i * 20}ms` }}
                                 >
                                     <td>
-                                        <span title={ev.eventType}>{TYPE_ICON[ev.eventType] || '📋'}</span>
+                                        <span title={ev.eventType} style={{ display: 'inline-flex', verticalAlign: 'middle' }}>
+                                            {TYPE_ICON[ev.eventType] || <IconChartBar size={18} color="var(--text-secondary)" />}
+                                        </span>
                                     </td>
                                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                                         {((ev.payload?.eventUuid as string) || '-').slice(0, 8)}

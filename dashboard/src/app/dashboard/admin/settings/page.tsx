@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import Breadcrumbs from '../../../../components/navigation/Breadcrumbs';
 import LiveRegion from '../../../../components/accessibility/LiveRegion';
+import { IconBolt, IconPlugConnected, IconBoxPadding, IconShieldLock } from '@tabler/icons-react';
 
 interface SettingGroup {
     title: string;
-    icon: string;
+    icon: React.ReactNode;
     settings: Setting[];
 }
 
@@ -22,7 +23,7 @@ interface Setting {
 const INITIAL_SETTINGS: SettingGroup[] = [
     {
         title: 'Event Processing',
-        icon: '⚡',
+        icon: <IconBolt size={20} stroke={2} />,
         settings: [
             { key: 'maxRetries', label: 'Max Retries', description: 'Maximum number of retry attempts before DLQ', type: 'number', value: 5 },
             { key: 'retryDelay', label: 'Base Retry Delay (ms)', description: 'Initial delay for exponential backoff', type: 'number', value: 1000 },
@@ -31,7 +32,7 @@ const INITIAL_SETTINGS: SettingGroup[] = [
     },
     {
         title: 'WebSocket',
-        icon: '🔌',
+        icon: <IconPlugConnected size={20} stroke={2} />,
         settings: [
             { key: 'wsBroadcast', label: 'Broadcast Events', description: 'Send events to dashboard in real-time', type: 'toggle', value: true },
             { key: 'wsHeartbeat', label: 'Heartbeat Interval (s)', description: 'Interval for WebSocket keepalive pings', type: 'number', value: 30 },
@@ -39,7 +40,7 @@ const INITIAL_SETTINGS: SettingGroup[] = [
     },
     {
         title: 'Outbox',
-        icon: '📤',
+        icon: <IconBoxPadding size={20} stroke={2} />,
         settings: [
             { key: 'outboxInterval', label: 'Poll Interval (ms)', description: 'How often the outbox processor polls for pending events', type: 'number', value: 5000 },
             { key: 'outboxBatch', label: 'Batch Size', description: 'Number of outbox events processed per poll', type: 'number', value: 10 },
@@ -47,7 +48,7 @@ const INITIAL_SETTINGS: SettingGroup[] = [
     },
     {
         title: 'Security',
-        icon: '🔐',
+        icon: <IconShieldLock size={20} stroke={2} />,
         settings: [
             { key: 'jwtExpiry', label: 'JWT Expiry', description: 'Token expiration time', type: 'select', value: '24h', options: ['1h', '8h', '24h', '7d'] },
             { key: 'rateLimitWindow', label: 'Rate Limit Window (s)', description: 'Time window for rate limiting', type: 'number', value: 60 },
@@ -137,7 +138,7 @@ export default function SettingsPage() {
                                             {setting.description}
                                         </div>
                                     </div>
-                                    <div style={{ marginLeft: 24 }}>
+                                    <div style={{ marginLeft: 24, flexShrink: 0, width: 120, display: 'flex', justifyContent: 'flex-end' }}>
                                         {setting.type === 'toggle' ? (
                                             <button
                                                 className={`btn btn--sm ${setting.value ? 'btn--primary' : 'btn--ghost'}`}
