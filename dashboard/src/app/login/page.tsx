@@ -28,8 +28,8 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="login-page">
-            <div className="login-card">
+        <main className="login-page" role="main">
+            <section className="login-card" aria-labelledby="login-title">
                 <div className="login-card__logo">
                     <div
                         className="app-sidebar__logo-icon"
@@ -37,7 +37,7 @@ export default function LoginPage() {
                     >
                         <IconShieldLock size={32} stroke={1.75} />
                     </div>
-                    <h1 className="login-card__title">SmartAccess</h1>
+                    <h1 id="login-title" className="login-card__title">SmartAccess</h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 4 }}>
                         IoT Management Platform
                     </p>
@@ -57,6 +57,8 @@ export default function LoginPage() {
                             onChange={(e) => setEmail(e.target.value)}
                             required
                             autoFocus
+                            autoComplete="email"
+                            inputMode="email"
                         />
                     </div>
                     <div className="form-group">
@@ -69,6 +71,7 @@ export default function LoginPage() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
+                            autoComplete="current-password"
                         />
                     </div>
                     <button
@@ -80,7 +83,7 @@ export default function LoginPage() {
                         {loading ? 'Signing in…' : 'Sign In'}
                     </button>
                 </form>
-            </div>
-        </div>
+            </section>
+        </main>
     );
 }

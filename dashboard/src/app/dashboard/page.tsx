@@ -59,10 +59,8 @@ export default function DashboardOverview() {
     return (
         <>
             {/* Header */}
-            <div className="app-header">
+            <header className="app-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    {/* DIAGNOSTIC: Remove this once Tabler icons are confirmed working */}
-                    <IconRocket size={48} stroke={1.5} color="#ff0000" style={{ flexShrink: 0 }} />
                     <div>
                         <h1 className="app-header__title">Dashboard</h1>
                         <p className="app-header__subtitle">Real-time IoT overview</p>
@@ -76,11 +74,11 @@ export default function DashboardOverview() {
                         <><IconWifiOff size={14} stroke={2} style={{ marginRight: 4 }} /> Disconnected</>
                     )}
                 </div>
-            </div>
+            </header>
 
             {/* Stats */}
-            <div className="stat-grid">
-                <div className="card stat-card">
+            <section className="stat-grid" aria-label="Key Metrics">
+                <article className="card stat-card">
                     <div className="stat-card__icon stat-card__icon--blue">
                         <IconDeviceLaptop size={32} stroke={2} />
                     </div>
@@ -88,8 +86,8 @@ export default function DashboardOverview() {
                         <div className="card__value">{total}</div>
                         <div className="card__label">Total Devices</div>
                     </div>
-                </div>
-                <div className="card stat-card">
+                </article>
+                <article className="card stat-card">
                     <div className="stat-card__icon stat-card__icon--green">
                         <IconCircleCheck size={32} stroke={2} />
                     </div>
@@ -97,8 +95,8 @@ export default function DashboardOverview() {
                         <div className="card__value">{online}</div>
                         <div className="card__label">Online</div>
                     </div>
-                </div>
-                <div className="card stat-card">
+                </article>
+                <article className="card stat-card">
                     <div className="stat-card__icon stat-card__icon--yellow">
                         <IconAlertTriangle size={32} stroke={2} />
                     </div>
@@ -106,8 +104,8 @@ export default function DashboardOverview() {
                         <div className="card__value">{offline}</div>
                         <div className="card__label">Offline</div>
                     </div>
-                </div>
-                <div className="card stat-card">
+                </article>
+                <article className="card stat-card">
                     <div className="stat-card__icon stat-card__icon--red">
                         <IconCircleX size={32} stroke={2} />
                     </div>
@@ -115,13 +113,13 @@ export default function DashboardOverview() {
                         <div className="card__value">{error}</div>
                         <div className="card__label">Errors</div>
                     </div>
-                </div>
-            </div>
+                </article>
+            </section>
 
             {/* Infrastructure Health + Live Feed */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} aria-label="System Status">
                 {/* Health */}
-                <div className="card">
+                <article className="card">
                     <div className="card__header">
                         <h2 className="card__title">Infrastructure</h2>
                     </div>
@@ -140,10 +138,10 @@ export default function DashboardOverview() {
                     ) : (
                         <p style={{ color: 'var(--text-muted)' }}>{loading ? 'Loading…' : 'Unable to fetch health'}</p>
                     )}
-                </div>
+                </article>
 
                 {/* Live Feed */}
-                <div className="card">
+                <article className="card">
                     <div className="card__header">
                         <h2 className="card__title">Live Events</h2>
                         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
@@ -176,8 +174,8 @@ export default function DashboardOverview() {
                             ))
                         )}
                     </div>
-                </div>
-            </div>
+                </article>
+            </section>
         </>
     );
 }
