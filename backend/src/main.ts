@@ -14,6 +14,7 @@ import { PgAuditRepository } from './infrastructure/repositories/audit.repositor
 import { PgEventProcessingLogRepository } from './infrastructure/repositories/event-processing-log.repository.js';
 import { PgOutboxRepository } from './infrastructure/outbox/outbox.repository.js';
 import { PgUserRepository } from './infrastructure/repositories/user.repository.js';
+import { PgSettingsRepository } from './infrastructure/repositories/settings.repository.js';
 
 // Adapters
 import { RabbitMQAdapter } from './infrastructure/adapters/broker.adapter.js';
@@ -40,6 +41,8 @@ import { createAuthRoutes } from './application/routes/auth.routes.js';
 import { createAlertRoutes } from './application/routes/alert.routes.js';
 import { createAdminRoutes } from './application/routes/admin.routes.js';
 import { createMetricRoutes } from './application/routes/metric.routes.js';
+import { createSettingsRoutes } from './application/routes/settings.routes.js';
+import { createAuditRoutes } from './application/routes/audit.routes.js';
 
 // Middleware
 import { errorHandler } from './application/middleware/error-handler.js';
@@ -66,6 +69,7 @@ const auditRepo = new PgAuditRepository();
 const processingLogRepo = new PgEventProcessingLogRepository();
 const outboxRepo = new PgOutboxRepository();
 const userRepo = new PgUserRepository();
+const settingsRepo = new PgSettingsRepository();
 const brokerAdapter = new RabbitMQAdapter();
 const cacheAdapter = new RedisCacheAdapter();
 const wsGateway = new WebSocketGateway(server, logger);
@@ -131,7 +135,9 @@ app.use('/api/devices', authMiddleware, createDeviceRoutes(deviceService));
 app.use('/api/events', authMiddleware, requireRole(UserRole.ADMIN, UserRole.OPERATOR), createEventRoutes(eventRepo));
 app.use('/api/alerts', authMiddleware, createAlertRoutes(alertService));
 app.use('/api/metrics', authMiddleware, createMetricRoutes());
-app.use('/api/admin', authMiddleware, requireRole(UserRole.ADMIN), createAdminRoutes(userRepo));
+app.use('/api/audit', authMiddleware, requireRole(UserRole.ADMIN), createAuditRoutes(auditRepo));
+app.use('/api/admin/settings', authMiddleware, requireRole(UserRole.ADMIN), createSettingsRoutes(settingsRepo, auditRepo));
+app.use('/api/admin', authMiddleware, requireRole(UserRole.ADMIN), createAdminRoutes(userRepo, auditRepo));
 
 // Error handler (must be last)
 app.use(errorHandler);

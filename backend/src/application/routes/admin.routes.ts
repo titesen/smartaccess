@@ -1,10 +1,69 @@
 import { Router, type Request, type Response } from 'express';
 import type { IUserRepository } from '../../infrastructure/repositories/user.repository.js';
+import type { IAuditRepository } from '../../infrastructure/repositories/audit.repository.js';
 import { getPool } from '../../infrastructure/database/connection.js';
-import type { UserRole } from '../../domain/auth/auth.types.js';
+import type { UserRole, AuthUser } from '../../domain/auth/auth.types.js';
+import { hashPassword } from '../services/auth.service.js';
 
-export function createAdminRoutes(userRepo: IUserRepository): Router {
+interface AuthRequest extends Request {
+    user?: AuthUser;
+}
+
+export function createAdminRoutes(userRepo: IUserRepository, auditRepo: IAuditRepository): Router {
     const router = Router();
+
+    // POST /api/admin/users
+    router.post('/users', async (req: Request, res: Response) => {
+        const { email, password, role } = req.body;
+
+        if (!email || !password || !role) {
+            res.status(400).json({ error: 'Missing email, password, or role' });
+            return;
+        }
+
+        const client = await getPool().connect();
+        try {
+            await client.query('BEGIN');
+
+            const existing = await userRepo.findByEmail(client, email);
+            if (existing) {
+                await client.query('ROLLBACK');
+                res.status(409).json({ error: 'User already exists' });
+                return;
+            }
+
+            const hashedPassword = await hashPassword(password);
+            const newUser = await userRepo.create(client, email, hashedPassword, role as UserRole);
+
+            await auditRepo.create(client, {
+                eventType: 'USER_CREATED',
+                category: 'SECURITY',
+                aggregateType: 'USER',
+                aggregateId: String(newUser.id),
+                actor: (req as AuthRequest).user?.email ?? 'SYSTEM',
+                ipAddress: req.ip ?? null,
+                result: 'SUCCESS',
+            });
+
+            await client.query('COMMIT');
+
+            res.status(201).json({
+                data: {
+                    id: newUser.id,
+                    email: newUser.email,
+                    role: newUser.role,
+                    isActive: newUser.isActive,
+                    createdAt: newUser.createdAt,
+                    updatedAt: newUser.updatedAt,
+                },
+            });
+        } catch (error) {
+            await client.query('ROLLBACK');
+            res.status(500).json({ error: 'Failed to create user' });
+        } finally {
+            client.release();
+        }
+    });
 
     // GET /api/admin/users
     router.get('/users', async (_req: Request, res: Response) => {

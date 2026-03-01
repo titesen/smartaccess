@@ -34,6 +34,7 @@ export interface CreateAuditLogDto {
 
 export interface IAuditRepository {
     create(client: pg.PoolClient, data: CreateAuditLogDto): Promise<void>;
+    findWithPagination(client: pg.PoolClient, limit: number, offset: number): Promise<AuditLogEntry[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -58,5 +59,31 @@ export class PgAuditRepository implements IAuditRepository {
                 data.result,
             ],
         );
+    }
+
+    async findWithPagination(client: pg.PoolClient, limit: number, offset: number): Promise<AuditLogEntry[]> {
+        const { rows } = await client.query(
+            `SELECT id, event_type, category, aggregate_type, aggregate_id, 
+                    previous_state, new_state, actor, ip_address, correlation_id, result, created_at
+             FROM audit_log
+             ORDER BY created_at DESC
+             LIMIT $1 OFFSET $2`,
+            [limit, offset]
+        );
+
+        return rows.map((row) => ({
+            id: parseInt(row.id, 10),
+            eventType: row.event_type,
+            category: row.category,
+            aggregateType: row.aggregate_type,
+            aggregateId: row.aggregate_id,
+            previousState: row.previous_state,
+            newState: row.new_state,
+            actor: row.actor,
+            ipAddress: row.ip_address,
+            correlationId: row.correlation_id,
+            result: row.result,
+            createdAt: row.created_at,
+        }));
     }
 }

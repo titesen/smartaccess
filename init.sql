@@ -274,6 +274,21 @@ CREATE TRIGGER tr_users_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION fn_update_timestamp();
 
+-- 2.11 system_settings
+-- System-wide configuration flags and preferences.
+
+CREATE TABLE system_settings (
+    key             VARCHAR(100)     PRIMARY KEY,
+    value           JSONB            NOT NULL,
+    updated_at      TIMESTAMPTZ      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by      VARCHAR(150)     NOT NULL
+);
+
+CREATE TRIGGER tr_system_settings_updated_at
+    BEFORE UPDATE ON system_settings
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_update_timestamp();
+
 -- Seed: default admin
 -- password: admin123
 -- hash generated via scrypt (salt:key format used by AuthService)

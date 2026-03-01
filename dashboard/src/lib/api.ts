@@ -215,6 +215,30 @@ export async function acknowledgeAlert(alertId: number): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// System Settings (admin)
+// ---------------------------------------------------------------------------
+
+export interface SystemSetting {
+    key: string;
+    value: any;
+    updatedAt?: string;
+    updatedBy?: string;
+}
+
+export async function fetchSettings(): Promise<Record<string, SystemSetting>> {
+    const res = await request<{ data: Record<string, SystemSetting> }>('/api/admin/settings');
+    return res.data;
+}
+
+export async function updateSettings(settings: Record<string, any>): Promise<Record<string, SystemSetting>> {
+    const res = await request<{ data: Record<string, SystemSetting> }>('/api/admin/settings', {
+        method: 'POST',
+        body: JSON.stringify(settings),
+    });
+    return res.data;
+}
+
+// ---------------------------------------------------------------------------
 // Users (admin)
 // ---------------------------------------------------------------------------
 
@@ -254,13 +278,16 @@ export async function updateUser(userId: number, data: { role?: string; isActive
 
 export interface AuditEntry {
     id: number;
-    action: string;
-    entityType: string;
-    entityId: string;
+    eventType: string;
     category: string;
-    details: Record<string, unknown>;
+    aggregateType: string;
+    aggregateId: string;
+    previousState: Record<string, unknown> | null;
+    newState: Record<string, unknown> | null;
+    actor: string;
+    ipAddress: string | null;
     correlationId: string | null;
-    performedBy: string | null;
+    result: 'SUCCESS' | 'FAILURE';
     createdAt: string;
 }
 

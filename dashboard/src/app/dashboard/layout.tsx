@@ -19,6 +19,7 @@ import {
     IconSettings,
     IconShieldLock,
     IconLogout,
+    IconFileDescription,
     type Icon,
 } from '@tabler/icons-react';
 
@@ -61,6 +62,7 @@ const NAV_CATEGORIES: NavCategory[] = [
         items: [
             { href: '/dashboard/admin/users', Icon: IconUsers, label: 'User Management', description: 'Manage operator access and role-based permissions.' },
             { href: '/dashboard/admin/settings', Icon: IconSettings, label: 'System Settings', description: 'Global platform configuration and variables.' },
+            { href: '/dashboard/admin/audit', Icon: IconFileDescription, label: 'Audit Logs', description: 'System-wide immutable trail of security and configuration changes.' },
         ],
     }
 ];

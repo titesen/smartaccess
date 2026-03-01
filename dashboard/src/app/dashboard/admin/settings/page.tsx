@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Breadcrumbs from '../../../../components/navigation/Breadcrumbs';
 import LiveRegion from '../../../../components/accessibility/LiveRegion';
 import { IconBolt, IconPlugConnected, IconBoxPadding, IconShieldLock } from '@tabler/icons-react';
@@ -61,6 +61,32 @@ export default function SettingsPage() {
     const [groups, setGroups] = useState(INITIAL_SETTINGS);
     const [statusMsg, setStatusMsg] = useState('');
     const [modified, setModified] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Fetch initial settings from API
+    useEffect(() => {
+        async function loadSettings() {
+            try {
+                const { fetchSettings } = await import('../../../../lib/api');
+                const dbSettings = await fetchSettings();
+
+                // Merge DB settings into the UI structure
+                setGroups(prev => prev.map(group => ({
+                    ...group,
+                    settings: group.settings.map(setting => ({
+                        ...setting,
+                        value: dbSettings[setting.key]?.value ?? setting.value
+                    }))
+                })));
+            } catch (err) {
+                console.error('Failed to load settings:', err);
+                setStatusMsg('Failed to load system settings');
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        loadSettings();
+    }, []);
 
     const updateSetting = (groupIdx: number, settingKey: string, newValue: string | number | boolean) => {
         setGroups((prev) =>
@@ -78,17 +104,58 @@ export default function SettingsPage() {
         setModified(true);
     };
 
-    const handleSave = () => {
-        // In production, this would POST to /api/admin/settings
-        setStatusMsg('Settings saved successfully');
-        setModified(false);
+    const handleSave = async () => {
+        try {
+            setStatusMsg('Saving settings...');
+            const { updateSettings } = await import('../../../../lib/api');
+
+            // Flatten groups into a key-value record
+            const payload: Record<string, any> = {};
+            for (const group of groups) {
+                for (const setting of group.settings) {
+                    payload[setting.key] = setting.value;
+                }
+            }
+
+            await updateSettings(payload);
+            setStatusMsg('Settings saved successfully');
+            setModified(false);
+        } catch (err) {
+            console.error('Failed to save settings:', err);
+            setStatusMsg('Failed to save system settings');
+        }
     };
 
-    const handleReset = () => {
-        setGroups(INITIAL_SETTINGS);
-        setModified(false);
-        setStatusMsg('Settings reset to defaults');
+    const handleReset = async () => {
+        setStatusMsg('Resetting settings...');
+        try {
+            const { fetchSettings } = await import('../../../../lib/api');
+            const dbSettings = await fetchSettings();
+
+            // Restore DB settings
+            setGroups(INITIAL_SETTINGS.map(group => ({
+                ...group,
+                settings: group.settings.map(setting => ({
+                    ...setting,
+                    value: dbSettings[setting.key]?.value ?? setting.value
+                }))
+            })));
+
+            setModified(false);
+            setStatusMsg('Settings reset to last saved state');
+        } catch (err) {
+            console.error('Failed to reset settings:', err);
+            setStatusMsg('Failed to reset settings');
+        }
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex h-full items-center justify-center">
+                <p>Loading settings...</p>
+            </div>
+        );
+    }
 
     return (
         <>
