@@ -16,12 +16,21 @@ declare global {
 /**
  * Creates an auth middleware that validates JWT from Authorization header.
  * Attaches `req.user` on success.
+ * Returns RFC 7807 Problem Details on failure.
  */
 export function createAuthMiddleware(authService: AuthService) {
     return (req: Request, res: Response, next: NextFunction): void => {
         const header = req.headers.authorization;
         if (!header || !header.startsWith('Bearer ')) {
-            res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Missing or invalid Authorization header' } });
+            res.status(401)
+                .contentType('application/problem+json')
+                .json({
+                    type: 'https://api.smartaccess.io/errors/unauthorized',
+                    title: 'Unauthorized',
+                    status: 401,
+                    detail: 'Missing or invalid Authorization header',
+                    instance: req.originalUrl,
+                });
             return;
         }
 
@@ -30,7 +39,15 @@ export function createAuthMiddleware(authService: AuthService) {
 
         if (!payload) {
             logger.warn('Invalid or expired JWT', { path: req.path });
-            res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Invalid or expired token' } });
+            res.status(401)
+                .contentType('application/problem+json')
+                .json({
+                    type: 'https://api.smartaccess.io/errors/token-expired',
+                    title: 'Unauthorized',
+                    status: 401,
+                    detail: 'Invalid or expired token',
+                    instance: req.originalUrl,
+                });
             return;
         }
 

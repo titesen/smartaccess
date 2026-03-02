@@ -79,12 +79,15 @@ export function rateLimit(config: Partial<RateLimitConfig> = {}) {
 
             if (current > maxRequests) {
                 logger.warn('Rate limit exceeded', { ip, current, max: maxRequests });
-                res.status(429).json({
-                    error: {
-                        code: 'RATE_LIMIT_EXCEEDED',
-                        message: `Too many requests. Limit: ${maxRequests} per ${windowSec}s`,
-                    },
-                });
+                res.status(429)
+                    .contentType('application/problem+json')
+                    .json({
+                        type: 'https://api.smartaccess.io/errors/rate-limit-exceeded',
+                        title: 'Rate Limit Exceeded',
+                        status: 429,
+                        detail: `Too many requests. Limit: ${maxRequests} per ${windowSec}s`,
+                        instance: req.originalUrl,
+                    });
                 return;
             }
 

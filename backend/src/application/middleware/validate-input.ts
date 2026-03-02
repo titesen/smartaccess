@@ -121,10 +121,16 @@ export function validateInput(schema: ValidationSchema) {
                 errors,
             });
 
-            res.status(400).json({
-                error: 'Validation Error',
-                details: errors,
-            });
+            res.status(400)
+                .contentType('application/problem+json')
+                .json({
+                    type: 'https://api.smartaccess.io/errors/validation-error',
+                    title: 'Validation Error',
+                    status: 400,
+                    detail: `${errors.length} validation error(s) found in request`,
+                    instance: req.originalUrl,
+                    errors,
+                });
             return;
         }
 

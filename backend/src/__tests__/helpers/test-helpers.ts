@@ -53,6 +53,7 @@ interface MockRequest {
     params: Record<string, string>;
     query: Record<string, string>;
     path: string;
+    originalUrl: string;
     method: string;
     ip?: string;
     headers: Record<string, string>;
@@ -63,6 +64,7 @@ interface MockResponse {
     json: ReturnType<typeof vi.fn>;
     set: ReturnType<typeof vi.fn>;
     send: ReturnType<typeof vi.fn>;
+    contentType: ReturnType<typeof vi.fn>;
     statusCode: number;
     _body: unknown;
 }
@@ -73,6 +75,7 @@ export function createMockRequest(overrides: Partial<MockRequest> = {}): MockReq
         params: {},
         query: {},
         path: '/test',
+        originalUrl: '/test',
         method: 'GET',
         ip: '127.0.0.1',
         headers: {},
@@ -88,11 +91,16 @@ export function createMockResponse(): MockResponse {
         json: vi.fn(),
         set: vi.fn(),
         send: vi.fn(),
+        contentType: vi.fn(),
     };
 
-    // Chain: res.status(400).json({...})
+    // Chain: res.status(400).contentType('...').json({...})
     res.status.mockImplementation((code: number) => {
         res.statusCode = code;
+        return res;
+    });
+
+    res.contentType.mockImplementation(() => {
         return res;
     });
 

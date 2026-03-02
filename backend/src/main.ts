@@ -128,16 +128,16 @@ app.get('/health', async (_req, res) => {
 app.use('/api/auth', createAuthRoutes(authService));
 
 // ---------------------------------------------------------------------------
-// Protected Routes (require JWT)
+// Protected Routes (require JWT) — API v1
 // ---------------------------------------------------------------------------
 
-app.use('/api/devices', authMiddleware, createDeviceRoutes(deviceService));
-app.use('/api/events', authMiddleware, requireRole(UserRole.ADMIN, UserRole.OPERATOR), createEventRoutes(eventRepo));
-app.use('/api/alerts', authMiddleware, createAlertRoutes(alertService));
-app.use('/api/metrics', authMiddleware, createMetricRoutes());
-app.use('/api/audit', authMiddleware, requireRole(UserRole.ADMIN), createAuditRoutes(auditRepo));
-app.use('/api/admin/settings', authMiddleware, requireRole(UserRole.ADMIN), createSettingsRoutes(settingsRepo, auditRepo));
-app.use('/api/admin', authMiddleware, requireRole(UserRole.ADMIN), createAdminRoutes(userRepo, auditRepo));
+app.use('/api/v1/devices', authMiddleware, createDeviceRoutes(deviceService));
+app.use('/api/v1/events', authMiddleware, requireRole(UserRole.ADMIN, UserRole.OPERATOR), createEventRoutes(eventRepo));
+app.use('/api/v1/alerts', authMiddleware, createAlertRoutes(alertService));
+app.use('/api/v1/metrics', authMiddleware, createMetricRoutes());
+app.use('/api/v1/audit', authMiddleware, requireRole(UserRole.ADMIN), createAuditRoutes(auditRepo));
+app.use('/api/v1/admin/settings', authMiddleware, requireRole(UserRole.ADMIN), createSettingsRoutes(settingsRepo, auditRepo));
+app.use('/api/v1/admin', authMiddleware, requireRole(UserRole.ADMIN), createAdminRoutes(userRepo, auditRepo));
 
 // Error handler (must be last)
 app.use(errorHandler);

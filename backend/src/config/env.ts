@@ -21,6 +21,20 @@ export const env = {
 
     jwt: {
         secret: process.env.JWT_SECRET || 'change-this-in-production',
-        expiration: process.env.JWT_EXPIRATION || '1h',
+        expiration: process.env.JWT_EXPIRATION || '15m',
+    },
+
+    // ── Future-Ready Stubs (2026 Best Practices) ──────────────────────
+    // §4.3 — Semantic Caching: enable to vectorize queries for similarity-based cache hits
+    semanticCache: {
+        enabled: process.env.SEMANTIC_CACHE_ENABLED === 'true',
+    },
+    // §4.1 — Model Context Protocol: enable to expose MCP-compatible tool endpoints for AI agents
+    mcp: {
+        enabled: process.env.MCP_ENABLED === 'true',
+    },
+    // §5.2 — Post-Quantum Cryptography: enable when Node.js supports hybrid key exchange (Kyber)
+    pqc: {
+        enabled: process.env.PQC_ENABLED === 'true',
     },
 } as const;

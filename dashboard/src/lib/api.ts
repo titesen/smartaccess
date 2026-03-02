@@ -14,6 +14,57 @@ class ApiError extends Error {
     }
 }
 
+let isRefreshing = false;
+let refreshQueue: (() => void)[] = [];
+
+/**
+ * Attempt to refresh the access token using the stored refresh token.
+ * Implements a queue to avoid multiple concurrent refresh requests.
+ */
+async function tryRefreshToken(): Promise<boolean> {
+    if (isRefreshing) {
+        return new Promise((resolve) => {
+            refreshQueue.push(() => resolve(true));
+        });
+    }
+
+    isRefreshing = true;
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+        isRefreshing = false;
+        return false;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+        });
+
+        if (!res.ok) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+            isRefreshing = false;
+            return false;
+        }
+
+        const json = await res.json();
+        localStorage.setItem('token', json.data.accessToken);
+        localStorage.setItem('refreshToken', json.data.refreshToken);
+        isRefreshing = false;
+
+        // Resolve pending requests
+        refreshQueue.forEach((cb) => cb());
+        refreshQueue = [];
+        return true;
+    } catch {
+        isRefreshing = false;
+        return false;
+    }
+}
+
 async function request<T>(
     path: string,
     options: RequestInit = {},
@@ -30,11 +81,17 @@ async function request<T>(
     });
 
     if (!res.ok) {
-        if (res.status === 401) {
+        // Auto-refresh on 401
+        if (res.status === 401 && typeof window !== 'undefined') {
+            const refreshed = await tryRefreshToken();
+            if (refreshed) {
+                // Retry the original request with the new token
+                return request<T>(path, options);
+            }
             logout();
         }
-        const body = await res.json().catch(() => ({ error: res.statusText }));
-        throw new ApiError(res.status, body.error?.message || body.error || res.statusText);
+        const body = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new ApiError(res.status, body.detail || body.error?.message || body.error || res.statusText);
     }
 
     return res.json();
@@ -45,17 +102,36 @@ async function request<T>(
 // ---------------------------------------------------------------------------
 
 export async function login(email: string, password: string) {
-    const result = await request<{ data: { token: string; user: { id: number; email: string; role: string } } }>(
+    const result = await request<{
+        data: {
+            accessToken: string;
+            refreshToken: string;
+            user: { id: number; email: string; role: string };
+        };
+    }>(
         '/api/auth/login',
         { method: 'POST', body: JSON.stringify({ email, password }) },
     );
-    localStorage.setItem('token', result.data.token);
+    localStorage.setItem('token', result.data.accessToken);
+    localStorage.setItem('refreshToken', result.data.refreshToken);
     localStorage.setItem('user', JSON.stringify(result.data.user));
     return result.data;
 }
 
 export function logout() {
+    const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+
+    // Fire-and-forget logout to revoke server-side refresh token
+    if (refreshToken) {
+        fetch(`${API_BASE}/api/auth/logout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+        }).catch(() => { /* ignore */ });
+    }
+
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     window.location.href = '/login';
 }
@@ -88,17 +164,17 @@ export interface Device {
 }
 
 export async function fetchDevices(): Promise<Device[]> {
-    const res = await request<{ data: Device[] }>('/api/devices');
+    const res = await request<{ data: Device[] }>('/api/v1/devices');
     return res.data;
 }
 
 export async function fetchDevice(uuid: string): Promise<Device> {
-    const res = await request<{ data: Device }>(`/api/devices/${uuid}`);
+    const res = await request<{ data: Device }>(`/api/v1/devices/${uuid}`);
     return res.data;
 }
 
 export async function updateDeviceStatus(uuid: string, status: string): Promise<Device> {
-    const res = await request<{ data: Device }>(`/api/devices/${uuid}/status`, {
+    const res = await request<{ data: Device }>(`/api/v1/devices/${uuid}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status }),
     });
@@ -123,22 +199,22 @@ export interface DomainEvent {
 }
 
 export async function fetchEvents(limit = 50, offset = 0): Promise<DomainEvent[]> {
-    const res = await request<{ data: DomainEvent[] }>(`/api/events?limit=${limit}&offset=${offset}`);
+    const res = await request<{ data: DomainEvent[] }>(`/api/v1/events?limit=${limit}&offset=${offset}`);
     return res.data;
 }
 
 export async function fetchEvent(eventUuid: string): Promise<DomainEvent> {
-    const res = await request<{ data: DomainEvent }>(`/api/events/${eventUuid}`);
+    const res = await request<{ data: DomainEvent }>(`/api/v1/events/${eventUuid}`);
     return res.data;
 }
 
 export async function fetchEventsByDevice(deviceId: number, limit = 50): Promise<DomainEvent[]> {
-    const res = await request<{ data: DomainEvent[] }>(`/api/events?deviceId=${deviceId}&limit=${limit}`);
+    const res = await request<{ data: DomainEvent[] }>(`/api/v1/events?deviceId=${deviceId}&limit=${limit}`);
     return res.data;
 }
 
 export async function retryEvent(eventUuid: string): Promise<void> {
-    await request(`/api/events/${eventUuid}/retry`, { method: 'POST' });
+    await request(`/api/v1/events/${eventUuid}/retry`, { method: 'POST' });
 }
 
 // ---------------------------------------------------------------------------
@@ -154,7 +230,7 @@ export interface DeadLetterEvent {
 }
 
 export async function fetchDeadLetterEvents(limit = 50): Promise<DeadLetterEvent[]> {
-    const res = await request<{ data: DeadLetterEvent[] }>(`/api/events/dlq/list?limit=${limit}`);
+    const res = await request<{ data: DeadLetterEvent[] }>(`/api/v1/events/dlq/list?limit=${limit}`);
     return res.data;
 }
 
@@ -172,7 +248,7 @@ export interface StatusHistoryEntry {
 }
 
 export async function fetchDeviceStatusHistory(deviceId: number): Promise<StatusHistoryEntry[]> {
-    const res = await request<{ data: StatusHistoryEntry[] }>(`/api/devices/${deviceId}/history`);
+    const res = await request<{ data: StatusHistoryEntry[] }>(`/api/v1/devices/${deviceId}/history`);
     return res.data;
 }
 
@@ -186,7 +262,7 @@ export async function fetchHealth() {
         status: string;
         timestamp: string;
         checks: { database: string; rabbitmq: string; redis: string };
-    }>('/api/health');
+    }>('/health');
 }
 
 // ---------------------------------------------------------------------------
@@ -206,12 +282,12 @@ export interface Alert {
 }
 
 export async function fetchAlerts(limit = 50): Promise<Alert[]> {
-    const res = await request<{ data: Alert[] }>(`/api/alerts?limit=${limit}`);
+    const res = await request<{ data: Alert[] }>(`/api/v1/alerts?limit=${limit}`);
     return res.data;
 }
 
 export async function acknowledgeAlert(alertId: number): Promise<void> {
-    await request(`/api/alerts/${alertId}/acknowledge`, { method: 'POST' });
+    await request(`/api/v1/alerts/${alertId}/acknowledge`, { method: 'POST' });
 }
 
 // ---------------------------------------------------------------------------
@@ -226,12 +302,12 @@ export interface SystemSetting {
 }
 
 export async function fetchSettings(): Promise<Record<string, SystemSetting>> {
-    const res = await request<{ data: Record<string, SystemSetting> }>('/api/admin/settings');
+    const res = await request<{ data: Record<string, SystemSetting> }>('/api/v1/admin/settings');
     return res.data;
 }
 
 export async function updateSettings(settings: Record<string, any>): Promise<Record<string, SystemSetting>> {
-    const res = await request<{ data: Record<string, SystemSetting> }>('/api/admin/settings', {
+    const res = await request<{ data: Record<string, SystemSetting> }>('/api/v1/admin/settings', {
         method: 'POST',
         body: JSON.stringify(settings),
     });
@@ -252,12 +328,12 @@ export interface User {
 }
 
 export async function fetchUsers(): Promise<User[]> {
-    const res = await request<{ data: User[] }>('/api/admin/users');
+    const res = await request<{ data: User[] }>('/api/v1/admin/users');
     return res.data;
 }
 
 export async function createUser(data: { email: string; password: string; role: string }): Promise<User> {
-    const res = await request<{ data: User }>('/api/admin/users', {
+    const res = await request<{ data: User }>('/api/v1/admin/users', {
         method: 'POST',
         body: JSON.stringify(data),
     });
@@ -265,7 +341,7 @@ export async function createUser(data: { email: string; password: string; role: 
 }
 
 export async function updateUser(userId: number, data: { role?: string; isActive?: boolean }): Promise<User> {
-    const res = await request<{ data: User }>(`/api/admin/users/${userId}`, {
+    const res = await request<{ data: User }>(`/api/v1/admin/users/${userId}`, {
         method: 'PATCH',
         body: JSON.stringify(data),
     });
@@ -292,7 +368,7 @@ export interface AuditEntry {
 }
 
 export async function fetchAuditLog(limit = 100): Promise<AuditEntry[]> {
-    const res = await request<{ data: AuditEntry[] }>(`/api/audit?limit=${limit}`);
+    const res = await request<{ data: AuditEntry[] }>(`/api/v1/audit?limit=${limit}`);
     return res.data;
 }
 
@@ -311,7 +387,7 @@ export interface MetricsSummary {
 }
 
 export async function fetchMetricsSummary(): Promise<MetricsSummary> {
-    return request<MetricsSummary>('/api/metrics/summary');
+    return request<MetricsSummary>('/api/v1/metrics/summary');
 }
 
 export { ApiError };

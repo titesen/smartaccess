@@ -13,16 +13,91 @@ export function createAuthRoutes(authService: AuthService): Router {
         try {
             const result = await authService.login(email, password, req.ip);
             if (!result) {
-                res.status(401).json({ error: 'Invalid credentials' });
+                res.status(401)
+                    .contentType('application/problem+json')
+                    .json({
+                        type: 'https://api.smartaccess.io/errors/invalid-credentials',
+                        title: 'Invalid Credentials',
+                        status: 401,
+                        detail: 'The provided email or password is incorrect',
+                        instance: req.originalUrl,
+                    });
                 return;
             }
             res.json({ data: result });
         } catch (err) {
-            res.status(500).json({
-                error: 'Login failed',
-                message: err instanceof Error ? err.message : String(err),
-            });
+            res.status(500)
+                .contentType('application/problem+json')
+                .json({
+                    type: 'https://api.smartaccess.io/errors/login-failed',
+                    title: 'Login Failed',
+                    status: 500,
+                    detail: err instanceof Error ? err.message : String(err),
+                    instance: req.originalUrl,
+                });
         }
+    });
+
+    // POST /api/auth/refresh — Exchange refresh token for new access + refresh pair
+    router.post('/refresh', async (req: Request, res: Response) => {
+        const { refreshToken } = req.body as { refreshToken?: string };
+
+        if (!refreshToken) {
+            res.status(400)
+                .contentType('application/problem+json')
+                .json({
+                    type: 'https://api.smartaccess.io/errors/missing-refresh-token',
+                    title: 'Bad Request',
+                    status: 400,
+                    detail: 'refreshToken is required in the request body',
+                    instance: req.originalUrl,
+                });
+            return;
+        }
+
+        try {
+            const result = await authService.refreshAccessToken(refreshToken);
+            if (!result) {
+                res.status(401)
+                    .contentType('application/problem+json')
+                    .json({
+                        type: 'https://api.smartaccess.io/errors/invalid-refresh-token',
+                        title: 'Invalid Refresh Token',
+                        status: 401,
+                        detail: 'The refresh token is invalid, expired, or has been revoked',
+                        instance: req.originalUrl,
+                    });
+                return;
+            }
+            res.json({ data: result });
+        } catch (err) {
+            res.status(500)
+                .contentType('application/problem+json')
+                .json({
+                    type: 'https://api.smartaccess.io/errors/refresh-failed',
+                    title: 'Token Refresh Failed',
+                    status: 500,
+                    detail: err instanceof Error ? err.message : String(err),
+                    instance: req.originalUrl,
+                });
+        }
+    });
+
+    // POST /api/auth/logout — Revoke the refresh token
+    router.post('/logout', async (req: Request, res: Response) => {
+        const { refreshToken } = req.body as { refreshToken?: string };
+
+        if (refreshToken) {
+            try {
+                await authService.revokeRefreshToken(refreshToken);
+            } catch (err) {
+                // Log but do not fail — logout should always succeed for the client
+                const message = err instanceof Error ? err.message : String(err);
+                console.error('Failed to revoke refresh token:', message);
+            }
+        }
+
+        res.status(204).end();
     });
 
     // POST /api/auth/register (for dev/seeding only)
@@ -41,7 +116,15 @@ export function createAuthRoutes(authService: AuthService): Router {
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             const status = message.includes('already exists') ? 409 : 500;
-            res.status(status).json({ error: message });
+            res.status(status)
+                .contentType('application/problem+json')
+                .json({
+                    type: 'https://api.smartaccess.io/errors/registration-failed',
+                    title: 'Registration Failed',
+                    status,
+                    detail: message,
+                    instance: req.originalUrl,
+                });
         }
     });
 

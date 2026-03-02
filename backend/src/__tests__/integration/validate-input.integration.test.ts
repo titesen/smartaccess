@@ -34,7 +34,7 @@ describe('validateInput middleware', () => {
 
             expect(next).not.toHaveBeenCalled();
             expect(res.status).toHaveBeenCalledWith(400);
-            expect(res._body).toHaveProperty('error', 'Validation Error');
+            expect(res._body).toHaveProperty('title', 'Validation Error');
         });
 
         it('should reject missing password', () => {

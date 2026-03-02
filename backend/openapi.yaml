@@ -1,0 +1,475 @@
+openapi: '3.1.0'
+info:
+  title: SmartAccess API
+  version: 1.0.0
+  description: |
+    IoT access-control backend providing device management, event processing,
+    real-time telemetry, alerting, audit logging, and administration.
+  contact:
+    name: SmartAccess Team
+
+servers:
+  - url: /api
+    description: Authentication endpoints (non-versioned)
+  - url: /api/v1
+    description: Main versioned API
+
+# ── Reusable Components ────────────────────────────────────────────────────
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Short-lived (15 min) access token
+
+  schemas:
+    ProblemDetails:
+      description: RFC 7807 Problem Details
+      type: object
+      required: [type, title, status, detail]
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://api.smartaccess.io/errors/unauthorized
+        title:
+          type: string
+          example: Unauthorized
+        status:
+          type: integer
+          example: 401
+        detail:
+          type: string
+          example: Missing or invalid Authorization header
+        instance:
+          type: string
+          example: /api/v1/devices
+
+    AuthUser:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: string, format: email }
+        role: { type: string, enum: [ADMIN, OPERATOR, VIEWER] }
+
+    LoginResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            accessToken: { type: string }
+            refreshToken: { type: string }
+            user: { $ref: '#/components/schemas/AuthUser' }
+
+    Device:
+      type: object
+      properties:
+        id: { type: integer }
+        deviceUuid: { type: string, format: uuid }
+        name: { type: string }
+        location: { type: string, nullable: true }
+        status: { type: string, enum: [REGISTERED, ONLINE, OFFLINE, ERROR, MAINTENANCE, DECOMMISSIONED] }
+        firmwareVersion: { type: string, nullable: true }
+        lastSeenAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    DomainEvent:
+      type: object
+      properties:
+        id: { type: integer }
+        eventUuid: { type: string, format: uuid }
+        deviceId: { type: integer }
+        eventType: { type: string }
+        payload: { type: object }
+        receivedAt: { type: string, format: date-time }
+        processingStatus: { type: string }
+        retryCount: { type: integer }
+        idempotencyKey: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    AuditEntry:
+      type: object
+      properties:
+        id: { type: integer }
+        eventType: { type: string }
+        category: { type: string }
+        aggregateType: { type: string }
+        aggregateId: { type: string }
+        actor: { type: string }
+        ipAddress: { type: string, nullable: true }
+        result: { type: string, enum: [SUCCESS, FAILURE] }
+        createdAt: { type: string, format: date-time }
+
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: string, format: email }
+        role: { type: string, enum: [ADMIN, OPERATOR, VIEWER] }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    HealthCheck:
+      type: object
+      properties:
+        service: { type: string }
+        status: { type: string, enum: [healthy, degraded] }
+        timestamp: { type: string, format: date-time }
+        checks:
+          type: object
+          properties:
+            database: { type: string }
+            rabbitmq: { type: string }
+            redis: { type: string }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+    NotFound:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+    RateLimited:
+      description: Rate limit exceeded (429)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+# ── Endpoints ──────────────────────────────────────────────────────────────
+paths:
+  # ── Health ───────────────────────────────────────────────────────────────
+  /health:
+    get:
+      tags: [Health]
+      summary: System health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: All systems healthy
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthCheck' }
+        '503':
+          description: One or more systems degraded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthCheck' }
+
+  # ── Auth ─────────────────────────────────────────────────────────────────
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate and receive token pair
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 6 }
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Exchange refresh token for a new token pair
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: Tokens refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      accessToken: { type: string }
+                      refreshToken: { type: string }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke refresh token
+      operationId: logout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '204':
+          description: Logged out
+
+  # ── Devices ──────────────────────────────────────────────────────────────
+  /v1/devices:
+    get:
+      tags: [Devices]
+      summary: List all devices
+      operationId: listDevices
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Device' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/devices/{uuid}:
+    get:
+      tags: [Devices]
+      summary: Get device by UUID
+      operationId: getDevice
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Device details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Device' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /v1/devices/{uuid}/status:
+    patch:
+      tags: [Devices]
+      summary: Update device status
+      operationId: updateDeviceStatus
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [REGISTERED, ONLINE, OFFLINE, ERROR, MAINTENANCE, DECOMMISSIONED]
+      responses:
+        '200':
+          description: Updated device
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Device' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Events ───────────────────────────────────────────────────────────────
+  /v1/events:
+    get:
+      tags: [Events]
+      summary: List events (paginated)
+      operationId: listEvents
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: deviceId
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/DomainEvent' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ── Audit ────────────────────────────────────────────────────────────────
+  /v1/audit:
+    get:
+      tags: [Audit]
+      summary: List audit log entries (admin only)
+      operationId: listAuditLogs
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+      responses:
+        '200':
+          description: Paginated audit entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/AuditEntry' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ── Admin — Users ────────────────────────────────────────────────────────
+  /v1/admin/users:
+    get:
+      tags: [Admin]
+      summary: List all users (admin only)
+      operationId: listUsers
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Admin]
+      summary: Create a new user (admin only)
+      operationId: createUser
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, role]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 6 }
+                role: { type: string, enum: [ADMIN, OPERATOR, VIEWER] }
+      responses:
+        '201':
+          description: User created
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: User already exists
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+
+  /v1/admin/users/{userId}:
+    patch:
+      tags: [Admin]
+      summary: Update user role or active status (admin only)
+      operationId: updateUser
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role: { type: string, enum: [ADMIN, OPERATOR, VIEWER] }
+                isActive: { type: boolean }
+      responses:
+        '200':
+          description: User updated
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ── Admin — Settings ─────────────────────────────────────────────────────
+  /v1/admin/settings:
+    get:
+      tags: [Admin]
+      summary: Get all system settings (admin only)
+      operationId: getSettings
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Current settings
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Admin]
+      summary: Update system settings (admin only)
+      operationId: updateSettings
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Key-value pairs of settings to upsert
+      responses:
+        '200':
+          description: Settings updated
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
