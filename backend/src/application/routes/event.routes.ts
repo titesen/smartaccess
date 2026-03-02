@@ -1,12 +1,13 @@
 import { Router, type Request, type Response } from 'express';
 import { getPool } from '../../infrastructure/database/connection.js';
 import type { IEventRepository } from '../../infrastructure/repositories/event.repository.js';
+import { asyncHandler } from '../../shared/utils/async-handler.js';
 
 export function createEventRoutes(eventRepo: IEventRepository): Router {
     const router = Router();
 
-    // GET /api/events — List events (paginated)
-    router.get('/', async (req: Request, res: Response) => {
+    // GET /api/v1/events — List events (paginated)
+    router.get('/', asyncHandler(async (req: Request, res: Response) => {
         const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
         const offset = parseInt(req.query.offset as string) || 0;
 
@@ -15,18 +16,13 @@ export function createEventRoutes(eventRepo: IEventRepository): Router {
         try {
             const events = await eventRepo.findAll(client, limit, offset);
             res.json({ data: events, limit, offset, total: events.length });
-        } catch (err) {
-            res.status(500).json({
-                error: 'Failed to retrieve events',
-                message: err instanceof Error ? err.message : String(err),
-            });
         } finally {
             client.release();
         }
-    });
+    }));
 
-    // GET /api/events/:uuid — Get event by UUID
-    router.get('/:uuid', async (req: Request, res: Response) => {
+    // GET /api/v1/events/:uuid — Get event by UUID
+    router.get('/:uuid', asyncHandler(async (req: Request, res: Response) => {
         const pool = getPool();
         const client = await pool.connect();
         try {
@@ -36,18 +32,13 @@ export function createEventRoutes(eventRepo: IEventRepository): Router {
                 return;
             }
             res.json({ data: event });
-        } catch (err) {
-            res.status(500).json({
-                error: 'Failed to retrieve event',
-                message: err instanceof Error ? err.message : String(err),
-            });
         } finally {
             client.release();
         }
-    });
+    }));
 
-    // GET /api/events/dlq — List dead-lettered events
-    router.get('/dlq/list', async (_req: Request, res: Response) => {
+    // GET /api/v1/events/dlq/list — List dead-lettered events
+    router.get('/dlq/list', asyncHandler(async (_req: Request, res: Response) => {
         const pool = getPool();
         const client = await pool.connect();
         try {
@@ -60,15 +51,10 @@ export function createEventRoutes(eventRepo: IEventRepository): Router {
                  LIMIT 100`,
             );
             res.json({ data: rows, total: rows.length });
-        } catch (err) {
-            res.status(500).json({
-                error: 'Failed to retrieve DLQ events',
-                message: err instanceof Error ? err.message : String(err),
-            });
         } finally {
             client.release();
         }
-    });
+    }));
 
     return router;
 }

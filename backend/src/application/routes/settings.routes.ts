@@ -2,31 +2,25 @@ import { Router, type Request, type Response } from 'express';
 import type { ISettingsRepository } from '../../infrastructure/repositories/settings.repository.js';
 import type { IAuditRepository } from '../../infrastructure/repositories/audit.repository.js';
 import { getPool } from '../../infrastructure/database/connection.js';
-import type { AuthUser } from '../../domain/auth/auth.types.js';
-
-interface AuthRequest extends Request {
-    user?: AuthUser;
-}
+import { asyncHandler } from '../../shared/utils/async-handler.js';
 
 export function createSettingsRoutes(settingsRepo: ISettingsRepository, auditRepo: IAuditRepository): Router {
     const router = Router();
 
-    // GET /api/admin/settings
-    router.get('/', async (_req: Request, res: Response) => {
+    // GET /api/v1/admin/settings
+    router.get('/', asyncHandler(async (_req: Request, res: Response) => {
         const client = await getPool().connect();
         try {
             const settings = await settingsRepo.getAllSettings(client);
             res.json({ data: settings });
-        } catch (error) {
-            res.status(500).json({ error: 'Failed to retrieve settings' });
         } finally {
             client.release();
         }
-    });
+    }));
 
-    // POST /api/admin/settings
-    router.post('/', async (req: AuthRequest, res: Response) => {
-        const updates = req.body as Record<string, any>;
+    // POST /api/v1/admin/settings
+    router.post('/', asyncHandler(async (req: Request, res: Response) => {
+        const updates = req.body as Record<string, unknown>;
 
         if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
             res.status(400).json({ error: 'Invalid settings payload format' });
@@ -45,21 +39,20 @@ export function createSettingsRoutes(settingsRepo: ISettingsRepository, auditRep
                 category: 'SECURITY',
                 aggregateType: 'SYSTEM_SETTINGS',
                 aggregateId: 'global',
-                actor: actor,
+                actor,
                 ipAddress: req.ip ?? null,
                 result: 'SUCCESS',
             });
 
             await client.query('COMMIT');
-
             res.status(200).json({ data: newSettings });
-        } catch (error) {
+        } catch (err) {
             await client.query('ROLLBACK');
-            res.status(500).json({ error: 'Failed to update settings' });
+            throw err; // Re-throw to let asyncHandler delegate to error handler
         } finally {
             client.release();
         }
-    });
+    }));
 
     return router;
 }

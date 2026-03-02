@@ -6,7 +6,9 @@ export class DomainError extends Error {
         super(message);
         this.name = this.constructor.name;
         this.code = code;
-        this.context = context;
+        if (context !== undefined) {
+            this.context = context;
+        }
         Object.setPrototypeOf(this, new.target.prototype);
     }
 }

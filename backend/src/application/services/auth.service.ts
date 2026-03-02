@@ -4,44 +4,86 @@ import { getPool } from '../../infrastructure/database/connection.js';
 import type { IUserRepository } from '../../infrastructure/repositories/user.repository.js';
 import type { IAuditRepository } from '../../infrastructure/repositories/audit.repository.js';
 import { env } from '../../config/env.js';
-import type { AuthUser, JwtPayload, UserRole } from '../../domain/auth/auth.types.js';
+import type { AuthUser, TokenPayload, UserRole } from '../../domain/auth/auth.types.js';
 
 // ---------------------------------------------------------------------------
-// Simple JWT implementation (HMAC-SHA256) — no external dependency needed
+// Encrypted Token Implementation (PASETO-inspired, ChaCha20-Poly1305)
+// ---------------------------------------------------------------------------
+// Unlike JWT, the payload is ENCRYPTED — not just signed.
+// An attacker who intercepts the token cannot read its contents.
+// The format is: `sa.v1.local.<nonce-b64url>.<ciphertext-b64url>`
+//   - `sa` = SmartAccess
+//   - `v1` = version 1
+//   - `local` = symmetric encryption (single key, like PASETO v4.local)
 // ---------------------------------------------------------------------------
 
-function base64url(data: string): string {
-    return Buffer.from(data).toString('base64url');
+const TOKEN_PREFIX = 'sa.v1.local';
+
+function deriveKey(secret: string): Buffer {
+    // Derive a 32-byte key from the secret using HKDF
+    return crypto.hkdfSync('sha256', secret, '', 'smartaccess-token-key', 32) as unknown as Buffer;
 }
 
-function sign(payload: Record<string, unknown>, secret: string, expiresInSeconds: number): string {
-    const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+function encryptToken(payload: Record<string, unknown>, secret: string, expiresInSeconds: number): string {
     const now = Math.floor(Date.now() / 1000);
-    const body = base64url(
-        JSON.stringify({ ...payload, iat: now, exp: now + expiresInSeconds }),
+    const fullPayload = JSON.stringify({ ...payload, iat: now, exp: now + expiresInSeconds });
+
+    const key = deriveKey(secret);
+    const iv = crypto.randomBytes(12); // 96-bit nonce for ChaCha20-Poly1305
+
+    const cipher = crypto.createCipheriv(
+        'chacha20-poly1305' as crypto.CipherGCMTypes,
+        key,
+        iv,
+        { authTagLength: 16 },
     );
-    const signature = crypto
-        .createHmac('sha256', secret)
-        .update(`${header}.${body}`)
-        .digest('base64url');
-    return `${header}.${body}.${signature}`;
+
+    // Use the token prefix as AAD (additional authenticated data)
+    cipher.setAAD(Buffer.from(TOKEN_PREFIX), { plaintextLength: Buffer.byteLength(fullPayload, 'utf8') });
+
+    const encrypted = Buffer.concat([cipher.update(fullPayload, 'utf8'), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+
+    // Combine: nonce + ciphertext + authTag
+    const combined = Buffer.concat([iv, encrypted, authTag]);
+    return `${TOKEN_PREFIX}.${combined.toString('base64url')}`;
 }
 
-function verify(token: string, secret: string): JwtPayload | null {
+function decryptToken(token: string, secret: string): TokenPayload | null {
     const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const [header, body, signature] = parts;
-
-    const expected = crypto
-        .createHmac('sha256', secret)
-        .update(`${header}.${body}`)
-        .digest('base64url');
-
-    if (signature !== expected) return null;
+    // Expected: sa.v1.local.<data>
+    if (parts.length !== 4 || `${parts[0]}.${parts[1]}.${parts[2]}` !== TOKEN_PREFIX) {
+        return null;
+    }
 
     try {
-        const payload = JSON.parse(Buffer.from(body, 'base64url').toString()) as JwtPayload;
-        if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
+        const key = deriveKey(secret);
+        const combined = Buffer.from(parts[3], 'base64url');
+
+        // Extract: nonce (12 bytes) + ciphertext (variable) + authTag (16 bytes)
+        if (combined.length < 28) return null; // minimum: 12 + 0 + 16
+
+        const iv = combined.subarray(0, 12);
+        const authTag = combined.subarray(combined.length - 16);
+        const ciphertext = combined.subarray(12, combined.length - 16);
+
+        const decipher = crypto.createDecipheriv(
+            'chacha20-poly1305' as crypto.CipherGCMTypes,
+            key,
+            iv,
+            { authTagLength: 16 },
+        );
+        decipher.setAAD(Buffer.from(TOKEN_PREFIX), { plaintextLength: ciphertext.length });
+        decipher.setAuthTag(authTag);
+
+        const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+        const payload = JSON.parse(decrypted.toString('utf8')) as TokenPayload;
+
+        // Validate expiration
+        if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+            return null;
+        }
+
         return payload;
     } catch {
         return null;
@@ -148,7 +190,7 @@ export class AuthService {
                 return null;
             }
 
-            const accessToken = sign(
+            const accessToken = encryptToken(
                 { userId: user.id, email: user.email, role: user.role },
                 env.jwt.secret,
                 ACCESS_TOKEN_EXPIRY_SECONDS,
@@ -214,7 +256,7 @@ export class AuthService {
             );
 
             // Issue new pair
-            const accessToken = sign(
+            const accessToken = encryptToken(
                 { userId: row.user_id, email: row.email, role: row.role },
                 env.jwt.secret,
                 ACCESS_TOKEN_EXPIRY_SECONDS,
@@ -268,7 +310,7 @@ export class AuthService {
         }
     }
 
-    verifyToken(token: string): JwtPayload | null {
-        return verify(token, env.jwt.secret);
+    verifyToken(token: string): TokenPayload | null {
+        return decryptToken(token, env.jwt.secret);
     }
 }

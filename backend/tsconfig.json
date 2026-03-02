@@ -4,6 +4,7 @@
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
         "strict": true,
+        "exactOptionalPropertyTypes": true,
         "noImplicitAny": true,
         "strictNullChecks": true,
         "noUnusedLocals": true,
@@ -13,6 +14,24 @@
         "declaration": true,
         "outDir": "./dist",
         "rootDir": "./src",
+        "baseUrl": ".",
+        "paths": {
+            "@domain/*": [
+                "src/domain/*"
+            ],
+            "@application/*": [
+                "src/application/*"
+            ],
+            "@infrastructure/*": [
+                "src/infrastructure/*"
+            ],
+            "@shared/*": [
+                "src/shared/*"
+            ],
+            "@config/*": [
+                "src/config/*"
+            ]
+        },
         "sourceMap": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true

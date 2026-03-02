@@ -56,7 +56,7 @@ export async function initTracing(config: Partial<TracingConfig> = {}): Promise<
         const { Resource } = await import('@opentelemetry/resources');
         // @ts-expect-error — optional dependency
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { ATTR_SERVICE_NAME } = await import('@opentelemetry/semantic-conventions') as any;
+        const { ATTR_SERVICE_NAME } = await import('@opentelemetry/semantic-conventions');
 
         const traceExporter = new OTLPTraceExporter({
             url: `${cfg.otlpEndpoint}/v1/traces`,

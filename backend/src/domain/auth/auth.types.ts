@@ -8,13 +8,16 @@ export enum UserRole {
     VIEWER = 'VIEWER',
 }
 
-export interface JwtPayload {
+export interface TokenPayload {
     userId: number;
     email: string;
     role: UserRole;
     iat?: number;
     exp?: number;
 }
+
+/** @deprecated Use TokenPayload instead */
+export type JwtPayload = TokenPayload;
 
 export interface AuthUser {
     id: number;

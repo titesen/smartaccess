@@ -14,12 +14,21 @@ class ApiError extends Error {
     }
 }
 
+/**
+ * Read a cookie value by name (for reading the CSRF token).
+ */
+function getCookie(name: string): string | null {
+    if (typeof document === 'undefined') return null;
+    const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
 let isRefreshing = false;
 let refreshQueue: (() => void)[] = [];
 
 /**
- * Attempt to refresh the access token using the stored refresh token.
- * Implements a queue to avoid multiple concurrent refresh requests.
+ * Attempt to refresh the access token using the HttpOnly refresh-token cookie.
+ * The cookie is sent automatically with credentials: 'include'.
  */
 async function tryRefreshToken(): Promise<boolean> {
     if (isRefreshing) {
@@ -29,30 +38,19 @@ async function tryRefreshToken(): Promise<boolean> {
     }
 
     isRefreshing = true;
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-        isRefreshing = false;
-        return false;
-    }
 
     try {
         const res = await fetch(`${API_BASE}/api/auth/refresh`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
         });
 
         if (!res.ok) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('refreshToken');
-            localStorage.removeItem('user');
             isRefreshing = false;
             return false;
         }
 
-        const json = await res.json();
-        localStorage.setItem('token', json.data.accessToken);
-        localStorage.setItem('refreshToken', json.data.refreshToken);
         isRefreshing = false;
 
         // Resolve pending requests
@@ -69,13 +67,15 @@ async function request<T>(
     path: string,
     options: RequestInit = {},
 ): Promise<T> {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    // Read CSRF token from the csrf-token cookie (set by server, readable by JS)
+    const csrfToken = typeof window !== 'undefined' ? getCookie('csrf-token') : null;
 
     const res = await fetch(`${API_BASE}${path}`, {
         ...options,
+        credentials: 'include', // Always send cookies
         headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
             ...options.headers,
         },
     });
@@ -85,7 +85,7 @@ async function request<T>(
         if (res.status === 401 && typeof window !== 'undefined') {
             const refreshed = await tryRefreshToken();
             if (refreshed) {
-                // Retry the original request with the new token
+                // Retry the original request with the new cookie
                 return request<T>(path, options);
             }
             logout();
@@ -104,34 +104,26 @@ async function request<T>(
 export async function login(email: string, password: string) {
     const result = await request<{
         data: {
-            accessToken: string;
-            refreshToken: string;
             user: { id: number; email: string; role: string };
         };
     }>(
         '/api/auth/login',
         { method: 'POST', body: JSON.stringify({ email, password }) },
     );
-    localStorage.setItem('token', result.data.accessToken);
-    localStorage.setItem('refreshToken', result.data.refreshToken);
+    // Tokens are now set as HttpOnly cookies by the server
+    // Only store user info in localStorage for UI display
     localStorage.setItem('user', JSON.stringify(result.data.user));
     return result.data;
 }
 
 export function logout() {
-    const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+    // Fire-and-forget logout to revoke server-side refresh token (cookie sent automatically)
+    fetch(`${API_BASE}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+    }).catch(() => { /* ignore */ });
 
-    // Fire-and-forget logout to revoke server-side refresh token
-    if (refreshToken) {
-        fetch(`${API_BASE}/api/auth/logout`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
-        }).catch(() => { /* ignore */ });
-    }
-
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     window.location.href = '/login';
 }
@@ -144,7 +136,9 @@ export function getStoredUser(): { id: number; email: string; role: string } | n
 
 export function isAuthenticated(): boolean {
     if (typeof window === 'undefined') return false;
-    return !!localStorage.getItem('token');
+    // With HttpOnly cookies, we can't check the token directly.
+    // We rely on the user info in localStorage as a UI indicator.
+    return !!localStorage.getItem('user');
 }
 
 // ---------------------------------------------------------------------------

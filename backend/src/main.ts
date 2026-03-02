@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import http from 'node:http';
 import { env } from './config/env.js';
 import { logger } from './shared/logger/logger.js';
@@ -27,6 +29,7 @@ import { DeviceService } from './application/services/device.service.js';
 import { AuthService } from './application/services/auth.service.js';
 import { AlertService } from './application/services/alert.service.js';
 import { EventConsumer } from './application/consumers/event.consumer.js';
+import { TokenBlacklist } from './application/services/token-blacklist.service.js';
 
 // Infrastructure — resilience
 import { OutboxProcessor } from './infrastructure/outbox/outbox.processor.js';
@@ -49,6 +52,7 @@ import { errorHandler } from './application/middleware/error-handler.js';
 import { requestLogger } from './application/middleware/request-logger.js';
 import { createAuthMiddleware } from './application/middleware/auth.middleware.js';
 import { requireRole } from './application/middleware/rbac.middleware.js';
+import { csrfProtection } from './application/middleware/csrf.middleware.js';
 
 // Domain
 import { UserRole } from './domain/auth/auth.types.js';
@@ -92,15 +96,21 @@ const deviceService = new DeviceService(deviceRepo, cacheAdapter);
 const authService = new AuthService(userRepo, auditRepo);
 const eventConsumer = new EventConsumer(brokerAdapter, eventProcessingService);
 const outboxProcessor = new OutboxProcessor(outboxRepo, brokerAdapter);
+const tokenBlacklist = new TokenBlacklist();
 
 // Middleware instances
-const authMiddleware = createAuthMiddleware(authService);
+const authMiddleware = createAuthMiddleware(authService, tokenBlacklist);
 
 // ---------------------------------------------------------------------------
 // Middleware
 // ---------------------------------------------------------------------------
 
-app.use(cors());
+app.use(helmet());
+app.use(cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost',
+    credentials: true,
+}));
+app.use(cookieParser());
 app.use(express.json());
 app.use(requestLogger);
 
@@ -128,16 +138,16 @@ app.get('/health', async (_req, res) => {
 app.use('/api/auth', createAuthRoutes(authService));
 
 // ---------------------------------------------------------------------------
-// Protected Routes (require JWT) — API v1
+// Protected Routes (require JWT + CSRF) — API v1
 // ---------------------------------------------------------------------------
 
-app.use('/api/v1/devices', authMiddleware, createDeviceRoutes(deviceService));
-app.use('/api/v1/events', authMiddleware, requireRole(UserRole.ADMIN, UserRole.OPERATOR), createEventRoutes(eventRepo));
-app.use('/api/v1/alerts', authMiddleware, createAlertRoutes(alertService));
-app.use('/api/v1/metrics', authMiddleware, createMetricRoutes());
-app.use('/api/v1/audit', authMiddleware, requireRole(UserRole.ADMIN), createAuditRoutes(auditRepo));
-app.use('/api/v1/admin/settings', authMiddleware, requireRole(UserRole.ADMIN), createSettingsRoutes(settingsRepo, auditRepo));
-app.use('/api/v1/admin', authMiddleware, requireRole(UserRole.ADMIN), createAdminRoutes(userRepo, auditRepo));
+app.use('/api/v1/devices', authMiddleware, csrfProtection, createDeviceRoutes(deviceService));
+app.use('/api/v1/events', authMiddleware, csrfProtection, requireRole(UserRole.ADMIN, UserRole.OPERATOR), createEventRoutes(eventRepo));
+app.use('/api/v1/alerts', authMiddleware, csrfProtection, createAlertRoutes(alertService));
+app.use('/api/v1/metrics', authMiddleware, csrfProtection, createMetricRoutes());
+app.use('/api/v1/audit', authMiddleware, csrfProtection, requireRole(UserRole.ADMIN), createAuditRoutes(auditRepo));
+app.use('/api/v1/admin/settings', authMiddleware, csrfProtection, requireRole(UserRole.ADMIN), createSettingsRoutes(settingsRepo, auditRepo));
+app.use('/api/v1/admin', authMiddleware, csrfProtection, requireRole(UserRole.ADMIN), createAdminRoutes(userRepo, auditRepo));
 
 // Error handler (must be last)
 app.use(errorHandler);
@@ -153,6 +163,7 @@ async function start(): Promise<void> {
         await connectDatabase();
         await connectBroker();
         await connectCache();
+        await tokenBlacklist.connect(env.redis.url);
     } catch (err) {
         logger.error('Failed to connect to infrastructure', {
             error: err instanceof Error ? err.message : String(err),
@@ -198,6 +209,7 @@ async function shutdown(signal: string): Promise<void> {
     wsGateway.close();
 
     try {
+        await tokenBlacklist.disconnect();
         await disconnectBroker();
         await disconnectCache();
         await disconnectDatabase();
@@ -213,7 +225,9 @@ async function shutdown(signal: string): Promise<void> {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
-start();
+if (process.env.NODE_ENV !== 'test') {
+    start();
+}
 
-// Export for WebSocket access from services
-export { wsGateway };
+// Export for integration testing and WebSocket access
+export { app, wsGateway };

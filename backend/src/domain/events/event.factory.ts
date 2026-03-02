@@ -43,9 +43,9 @@ export function parseIncomingEvent(raw: unknown): IncomingEvent {
     }
 
     return {
-        eventUuid: obj.eventUuid as string,
-        idempotencyKey: obj.idempotencyKey as string,
-        deviceUuid: obj.deviceUuid as string,
+        eventUuid: obj.eventUuid,
+        idempotencyKey: obj.idempotencyKey,
+        deviceUuid: obj.deviceUuid,
         eventType: obj.eventType as EventType,
         payload: obj.payload as Record<string, unknown>,
         timestamp: (obj.timestamp as string) || new Date().toISOString(),

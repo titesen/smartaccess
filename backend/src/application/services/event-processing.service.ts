@@ -87,7 +87,7 @@ export class EventProcessingService {
 
                 // --- NEW DLQ DEMO LOGIC ---
                 // If the simulator explicitly flags this event as a simulated failure
-                if ((event.payload as Record<string, unknown>).simulate_dlq === true) {
+                if ((event.payload).simulate_dlq === true) {
                     logger.error('Simulating unrecoverable processing failure for DLQ', {
                         eventUuid: event.eventUuid
                     });
@@ -96,7 +96,7 @@ export class EventProcessingService {
                 }
 
                 if (event.eventType === 'ALERT_TRIGGERED') {
-                    const payload = event.payload as Record<string, unknown>;
+                    const payload = event.payload;
                     const severityRaw = String(payload.severity ?? 'info').toLowerCase();
                     const severity = severityRaw as import('./alert.service.js').AlertSeverity;
                     await this.alertService.createAlert({
@@ -215,12 +215,12 @@ export class EventProcessingService {
         if (device) return device;
 
         // Auto-register device if it doesn't exist
-        const payload = event.payload as Record<string, unknown>;
+        const payload = event.payload;
         device = await this.deviceRepo.create(client, {
             deviceUuid: event.deviceUuid,
             name: (payload.name as string) || `device-${event.deviceUuid.slice(0, 8)}`,
-            location: payload.location as string | undefined,
-            firmwareVersion: payload.firmware_version as string | undefined,
+            ...(payload.location ? { location: payload.location as string } : {}),
+            ...(payload.firmware_version ? { firmwareVersion: payload.firmware_version as string } : {}),
         });
 
         await this.auditRepo.create(client, {
