@@ -10,6 +10,7 @@ services:
       - /var/cache/nginx
       - /var/run
       - /tmp
+      - /etc/nginx/conf.d
     deploy:
       resources:
         limits:
@@ -76,10 +77,9 @@ services:
 
   postgres:
     image: postgres:14
-    env_file: .env
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB:-smartaccess}
+      - POSTGRES_USER=${POSTGRES_USER:-smartaccess}
       - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
     secrets:
       - db_password
@@ -96,7 +96,7 @@ services:
           cpus: '1.0'
           memory: 1G
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-smartaccess}']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -106,12 +106,9 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
-    env_file: .env
     environment:
-      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ_DEFAULT_PASS_FILE=/run/secrets/mq_password
-    secrets:
-      - mq_password
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-smartaccess}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-smartaccess}
     ports:
       - '15672:15672'
     volumes:
@@ -125,12 +122,12 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: 512M
+          memory: 1024M
     healthcheck:
       test: ['CMD', 'rabbitmq-diagnostics', 'check_running']
       interval: 10s
       timeout: 10s
-      retries: 5
+      retries: 15
     networks:
       - smartaccess_network
     restart: unless-stopped
@@ -161,10 +158,11 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost
       - NEXT_PUBLIC_WS_URL=ws://localhost/ws
-    read_only: true
-    tmpfs:
-      - /app/.next/cache
-      - /tmp
+      - HOSTNAME=0.0.0.0
+    # read_only: true
+    # tmpfs:
+    #   - /app/.next/cache
+    #   - /tmp
     deploy:
       resources:
         limits:
