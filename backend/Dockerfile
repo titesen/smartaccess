@@ -5,15 +5,20 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine
+FROM node:20-alpine AS prod-deps
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
+
+FROM gcr.io/distroless/nodejs20-debian12
+WORKDIR /app
 COPY --from=builder /app/dist ./dist
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
 
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/health || exit 1
+# Run as nonroot user provided by distroless
+USER nonroot
+EXPOSE 3000
 
-USER node
-CMD ["node", "dist/main.js"]
+# Notice CMD doesn't use shell form because there is no shell
+CMD ["dist/main.js"]
