@@ -139,7 +139,7 @@ Diseño normalizado (3NF+) optimizado para escritura intensiva de eventos:
 ### 4.2 Redis
 
 - Cache de estado actual de dispositivos
-- Gestión de sesiones
+- Token blacklist (revocación inmediata)
 - Rate limiting
 
 ## 5. Frontend (PWA)
@@ -161,14 +161,21 @@ Diseño normalizado (3NF+) optimizado para escritura intensiva de eventos:
 
 ## 6. Seguridad
 
-| Aspecto | Implementación |
-|---------|---------------|
-| Transporte | TLS 1.3 via Nginx (HSTS habilitado) |
-| Autenticación | JWT con firma segura |
-| Autorización | RBAC (ADMIN, OPERATOR, VIEWER) |
-| Secretos | Variables de entorno, GitHub Secrets |
-| Red | Firewall, red interna Docker aislada |
-| Datos | Cifrado en reposo (full disk encryption) |
+El sistema implementa un modelo de seguridad por capas:
+
+| Capa | Implementación | Detalle |
+|------|---------------|---------|
+| Transporte | TLS 1.3 via Nginx (HSTS) | Nginx como TLS termination point |
+| Tokens | ChaCha20-Poly1305 + HKDF | PASETO-inspired, payload confidencial ([ADR-001](../adr/001-token-encryption.md)) |
+| Cookies | HttpOnly + SameSite=Strict + Secure | Sin acceso desde JavaScript del cliente |
+| CSRF | Double-Submit Cookie Pattern | Token CSRF en cookie + header |
+| Passwords | Scrypt (Node.js `crypto.scrypt`) | Sin dependencia externa ([ADR-002](../adr/002-password-hashing.md)) |
+| Revocación | Redis Token Blacklist con TTL | Invalidación inmediata de tokens comprometidos |
+| Autorización | RBAC (ADMIN, OPERATOR, VIEWER) | Middleware de roles por ruta |
+| Contenedores | Distroless + read_only + Docker Secrets | Sin shell, sin herramientas de ataque ([ADR-004](../adr/004-container-hardening.md)) |
+| Red | Red Docker interna aislada | Solo Nginx expone puertos al exterior |
+
+Ver documentación completa en [`07_security.md`](07_security.md).
 
 ## 7. Observabilidad
 

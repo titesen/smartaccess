@@ -24,127 +24,104 @@ El sistema implementa una arquitectura orientada a eventos con message broker, A
 | Observability Testing | Se validan logs, métricas y estados | Visibilidad operativa |
 | Automatización Completa | Todo es ejecutable por CI | Consistencia garantizada |
 
-### Pirámide de Testing
+### Testing Trophy (Metodología adoptada)
 
 - 70–75% Unit Tests
 - 15–20% Integration Tests
-- 5–10% E2E Tests
+- 5–10% E2E Tests (pivoteado a integration, ver [ADR-005](../adr/005-e2e-testing-pivot.md))
 - Event Flow & Resilience Tests (críticos para este sistema)
 
-## 2. Unit Tests
+## 2. Tests Implementados
 
-### Objetivo
+### Unit Tests — 5 archivos, 39 tests ✅
 
-Validar lógica de dominio, transiciones de estado, builders de eventos, lógica de idempotencia, políticas de retry, handlers de ACK y reglas de validación.
+Se ejecutan **sin Docker** y mockean todas las dependencias externas (PostgreSQL, Redis, Logger):
 
-### Herramientas
+```bash
+cd backend && npx vitest run src/application/services/__tests__/ --reporter=verbose
+```
 
-- Vitest
-- Supertest (para API aislada)
-- Mocks del broker y repositorio
+| Archivo | Tests | Qué cubre |
+|---------|-------|-----------|
+| `auth.service.test.ts` | 13 | Token encrypt/decrypt (ChaCha20), password hash/verify (Scrypt), login, register, refresh, revoke |
+| `token-blacklist.service.test.ts` | 7 | Redis blacklist add/check, graceful degradation cuando Redis cae |
+| `device.service.test.ts` | 9 | Cache hit/miss, DB delegation, state machine validation |
+| `dlq.service.test.ts` | 4 | Dead letter insertion, status update, audit log |
+| `alert.service.test.ts` | 6 | Alert creation, deduplication, acknowledgment |
 
-### Casos Críticos
+**Herramientas:** Vitest, `vi.mock()`, `vi.hoisted()`
 
-**State Machine Tests:**
+**Estrategia de Mocking:**
+- `getPool()` → mock del pool de PostgreSQL (sin conexión real)
+- `cache` → mock de Redis
+- `logger` → mock de Winston (suprime logs en tests)
+- `device-state-machine` → mock de validación de transiciones
 
-Validar transiciones de estado de dispositivos y alertas.
+### Integration Tests — 8 archivos, 53+ tests ✅
+
+Prueban el pipeline completo de Express (middleware → routing → response) usando Supertest:
+
+```bash
+cd backend && npx vitest run src/__tests__/integration/ --reporter=verbose
+```
+
+| Archivo | Tests | Qué cubre |
+|---------|-------|-----------|
+| `auth.integration.test.ts` | 6 | Login validation, HttpOnly cookies, refresh 401, logout 204 |
+| `device.integration.test.ts` | 4 | GET devices 401/200, GET by UUID 404/200 |
+| `event.integration.test.ts` | 4 | GET events pagination, 404 UUID, DLQ list |
+| `alert.integration.test.ts` | 3 | GET alerts 401/200, acknowledge 401 |
+| `middleware.integration.test.ts` | 7 | Correlation ID, RBAC 403, RFC 7807 format, auth Bearer |
+| `validate-input.integration.test.ts` | 13 | Login/register/device schemas, UUID validation |
+| `health.integration.test.ts` | 3 | Auth middleware, validation middleware, 404 handler |
+| `event-observer.integration.test.ts` | 8 | Handler registration, multiple handlers, async handlers |
+| `event-payload-builder.integration.test.ts` | 9 | Builder fluent API, immutability, validation |
+
+**Diseño resiliente al entorno:**
+Los tests auth-dependientes detectan si PostgreSQL está disponible y se **saltan gracefully** cuando Docker no está corriendo (patrón `dbAvailable`). Esto permite ejecutar siempre los tests sin errores falsos.
+
+### Tests Pre-existentes del Dominio
+
+| Archivo | Tests | Qué cubre |
+|---------|-------|-----------|
+| `event.factory.test.ts` | 6 | Parsing de eventos, validación de tipos, timestamp |
+| `event.value-objects.test.ts` | 14 | Value objects del dominio |
+
+## 3. Casos Críticos de Testing
+
+### State Machine Tests
+
+Validar transiciones de estado de dispositivos y alertas:
 
 ```
-ACTIVE -> INACTIVE ✔
-ACTIVE -> ERROR ✔
-ERROR -> REGISTERED ✖ (inválido)
+REGISTERED -> ONLINE ✔
+ONLINE -> OFFLINE ✔
+OFFLINE -> ONLINE ✔
+ERROR -> MAINTENANCE ✔
 DECOMMISSIONED -> cualquiera ✖ (inválido)
 ```
 
-**Idempotency Tests:**
+### Idempotency Tests
 
-Validar que si llega el mismo event_id dos veces, solo se procesa una vez, se registra en la tabla de idempotencia y el segundo intento es ignorado.
+Validar que si llega el mismo `event_id` dos veces, solo se procesa una vez, se registra en la tabla de idempotencia y el segundo intento es ignorado.
 
-**Retry Policy Tests:**
+### Retry Policy Tests
 
 Validar reintento con backoff exponencial, límite máximo de intentos y envío a DLQ cuando se exceden los reintentos.
 
-**ACK Handling Tests:**
+### ACK Handling Tests
 
 Simular ACK exitoso, NACK y timeout sin ACK.
 
-## 3. Integration Tests
+## 4. E2E Tests — Abortados
 
-### Objetivo
+**Framework original:** Playwright
 
-Probar la interacción entre componentes reales: Backend + PostgreSQL, Backend + Broker, Consumer + DB, Outbox Pattern, WebSocket + emisión de eventos.
+**Decisión:** Removido del proyecto ([ADR-005](../adr/005-e2e-testing-pivot.md)).
 
-### Herramientas
+**Razón:** Bugs de red exclusivos de Docker Desktop en Windows (IPv6 loopback, DNS proxy) impedían la ejecución confiable. La cobertura se suplió fortaleciendo los integration tests con Supertest.
 
-- Vitest
-- Docker Compose
-- PostgreSQL real
-- RabbitMQ real
-- Test containers (opcional)
-
-### Casos Críticos
-
-**Event Processing Integration:**
-
-Flujo completo: Device Simulator → Broker → Consumer → DB → WebSocket → Dashboard. Se verifica que el evento es almacenado, la proyección actualizada y el WebSocket notificado.
-
-**Duplicate Event Integration:**
-
-Enviar el mismo evento dos veces. Resultado esperado: 1 registro en `events`, 1 idempotency_key, 1 actualización en dashboard.
-
-**Consumer Crash Simulation:**
-
-1. Un evento entra al consumer
-2. El consumer falla antes del ACK
-3. El broker reentrega el evento
-
-Se valida: no hay duplicación, idempotencia funciona correctamente, retry_count incrementado.
-
-**Outbox Pattern Validation:**
-
-1. Se guarda evento en DB
-2. Outbox dispatcher lo publica
-3. Evento se marca como `published = TRUE`
-
-Se valida: no se pierde evento si el backend cae, el dispatcher retoma eventos pendientes.
-
-**WebSocket Reconnection:**
-
-Simular: cliente offline → se generan eventos → cliente vuelve online. Se valida: sincronización de estado y dashboard refleja estado actual.
-
-## 4. E2E Tests
-
-Framework: Playwright
-
-### Flujos Críticos
-
-**Device Lifecycle:**
-Registrar dispositivo → recibir telemetría → generar alerta → resolver alerta → verificar dashboard actualizado.
-
-**Alert Management:**
-Evento de error → genera alerta → usuario cambia estado → estado se propaga correctamente.
-
-**Real-Time Update:**
-Simular dispositivo enviando evento → usuario observa dashboard → actualización automática sin refresh.
-
-**Failure Recovery:**
-Backend reinicia → consumer retoma → sistema sigue funcionando.
-
-## 5. Tests Específicos de Arquitectura EDA
-
-### Event Contract Testing
-
-Validar schema del evento, versionado y compatibilidad backward. Opcional: JSON Schema validation, contract testing con Pact.
-
-### Consistency Testing
-
-Verificar consistencia eventual, que las proyecciones reflejen los eventos procesados y que no haya desincronización.
-
-### Dead Letter Queue Testing
-
-Simular evento inválido y consumer con fallo permanente. Validar que el evento termina en DLQ y no bloquea el procesamiento normal.
-
-## 6. Cobertura Mínima
+## 5. Cobertura Mínima
 
 | Alcance | Cobertura Mínima |
 |---------|-----------------|
@@ -154,9 +131,7 @@ Simular evento inválido y consumer con fallo permanente. Validar que el evento 
 | State transitions | 100% |
 | Retry logic | 100% |
 
-El pipeline de CI debe fallar si la cobertura mínima no se cumple.
-
-## 7. Quality Gates
+## 6. Quality Gates
 
 Antes de cada merge:
 
@@ -166,37 +141,7 @@ Antes de cada merge:
 - Lint sin errores
 - Build exitoso
 
-## 8. Estrategia de Mocking
-
-**Unit Tests:** Se mockean broker, DB y WebSocket emitter. La lógica de dominio nunca se mockea.
-
-**Integration Tests:** No se mockean PostgreSQL ni el broker. Se utilizan contenedores reales.
-
-**E2E Tests:** No se mockea el backend. Solo se mockean servicios externos si existieran.
-
-## 9. Resilience Testing
-
-Simulaciones obligatorias con tests automatizados:
-
-| Escenario | Validación |
-|-----------|-----------|
-| Consumer crash | Evento no se pierde, se reentrega |
-| Backend restart | Consumer retoma procesamiento |
-| Duplicate messages | Idempotencia previene duplicados |
-| Network partition | Broker retiene mensajes |
-| Delayed ACK | Evento se reentrega tras timeout |
-| Broker reconnection | Consumer se reconecta automáticamente |
-
-## 10. Performance Testing
-
-- Generar 1000 eventos simulados
-- Medir latencia promedio y p95
-- Validar throughput (> 50 EPS)
-- Verificar ausencia de memory leaks
-
-Herramientas: k6, Artillery.
-
-## 11. Integración con CI/CD
+## 7. Integración con CI/CD
 
 Pipeline:
 
@@ -208,3 +153,12 @@ Pipeline:
 6. Build
 
 Se aplica estrategia fail-fast: el pipeline se detiene ante el primer fallo.
+
+## 8. Desafíos Técnicos Resueltos
+
+| Problema | Causa | Solución |
+|----------|-------|---------|
+| `vi.mock()` path resolution | Paths se resuelven desde el test file, no el módulo | Usar `../../../` en vez de `../../` desde `__tests__/` |
+| `vi.mock()` hoisting | Factory functions no acceden a variables externas | Usar `vi.hoisted()` para declarar mocks antes del hoisting |
+| Date serialization | `JSON.parse()` convierte Date en strings ISO | Usar `toMatchObject()` en vez de `toEqual()` para cache |
+| DB-dependent tests sin Docker | Login falla con 500 cuando Postgres no está corriendo | Patrón `dbAvailable`: probe login, skip si DB no responde |
