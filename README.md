@@ -12,6 +12,8 @@
 
 | Documento | Audiencia | Descripción |
 |-----------|-----------|-------------|
+| [docs/INDEX.md](docs/INDEX.md) | 👤 Todos | **Índice principal** de toda la documentación + mapa de módulos |
+| [docs/diagrams/architecture.md](docs/diagrams/architecture.md) | 👤 Todos | 6 diagramas Mermaid — C4, event flow, ERD, state machine, security |
 | [docs/technical/01_architecture.md](docs/technical/01_architecture.md) | 🏗️ Arquitectos | C4 Mermaid, EDA, resiliencia, persistencia |
 | [docs/technical/07_security.md](docs/technical/07_security.md) | 🔒 Security | 6 capas de defensa en profundidad |
 | [docs/technical/05_testing.md](docs/technical/05_testing.md) | 🧪 QA/Dev | 92+ tests, archivos, comandos, desafíos |
@@ -21,6 +23,8 @@
 | [docs/product/02_prd.md](docs/product/02_prd.md) | 📋 Product | Product Requirements Document |
 | [docs/domain/business_rules.md](docs/domain/business_rules.md) | 📋 Domain | Reglas de negocio del sistema |
 | [data_dictionary.md](data_dictionary.md) | 👨‍💻 Developers | 10 tablas PostgreSQL, enums, constraints |
+| [CHANGELOG.md](CHANGELOG.md) | 👤 Todos | Historial de cambios (Keep a Changelog) |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | 👨‍💻 Developers | Guía de contribución + reglas de código |
 
 ## 📋 Descripción
 
