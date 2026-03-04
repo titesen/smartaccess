@@ -2,6 +2,7 @@
     "name": "SmartAccess IoT Platform",
     "short_name": "SmartAccess",
     "description": "Real-time IoT monitoring and access control dashboard",
+    "id": "/dashboard",
     "start_url": "/dashboard",
     "display": "standalone",
     "background_color": "#0a0a0f",

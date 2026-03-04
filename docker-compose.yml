@@ -5,6 +5,9 @@ services:
       - '80:80'
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./dashboard/public/icons:/srv/pwa/icons:ro
+      - ./dashboard/public/manifest.json:/srv/pwa/manifest.json:ro
+      - ./dashboard/public/sw.js:/srv/pwa/sw.js:ro
     read_only: true
     tmpfs:
       - /var/cache/nginx

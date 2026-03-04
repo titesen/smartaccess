@@ -112,19 +112,20 @@ async function networkFirst(request: Request): Promise<Response> {
 }
 
 // ---------------------------------------------------------------------------
-// Background Sync for offline event retry
+// Background Sync — Future Enhancement
 // ---------------------------------------------------------------------------
-sw.addEventListener('sync', (event: SyncEvent) => {
-    if (event.tag === 'retry-events') {
-        event.waitUntil(retryPendingEvents());
-    }
-});
-
-async function retryPendingEvents(): Promise<void> {
-    // In a production setup, this would read from IndexedDB
-    // and replay queued retries against the backend API
-    console.log('[SW] Background sync: retry-events triggered');
-}
+// TODO: Implement offline event queueing with IndexedDB.
+// Production implementation would:
+//   1. Queue failed API requests in IndexedDB when offline
+//   2. Register a 'sync' event when connectivity returns
+//   3. Replay queued requests against the backend API
+//   4. Clear IndexedDB entries on successful replay
+//
+// sw.addEventListener('sync', (event) => {
+//     if (event.tag === 'retry-events') {
+//         event.waitUntil(replayFromIndexedDB());
+//     }
+// });
 
 // ---------------------------------------------------------------------------
 // Push notifications (future use)
